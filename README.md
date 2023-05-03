@@ -125,6 +125,14 @@ python -m torch.distributed.launch --nproc_per_node 16 main_simmim.py \
 --cfg configs/swin_base__800ep/simmim_pretrain__swin_base__img192_window6__800ep.yaml --batch-size 128 --data-path <imagenet-path>/train [--output <output-directory> --tag <job-tag>]
 ```
 
+To pre-train `Swin Base` for 300 epochs on one Ada node (4 cores), run:
+DATA_PATH=/data/pwojcik/images_he_seg/
+OUTPUT_DIR=/data/pwojcik/SimMIM/output_dir
+```bash
+python -m torch.distributed.launch --nproc_per_node 4 main_simmim.py \ 
+--cfg configs/swin_base__800ep/simmim_pretrain__swin_base__img192_window6__800ep.yaml --batch-size 128 --data-path $DATA_PATH --output $OUTPUT_DIR
+```
+
 ### Fine-tuning pre-trained models
 To fine-tune models pre-trained by `SimMIM`, run:
 ```bash
