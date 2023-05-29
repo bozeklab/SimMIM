@@ -18,7 +18,15 @@ class COSiam(nn.Module):
                                     self.momentum_encoder.parameters()):
             param_m.data = param_m.data * m + param_b.data * (1. - m)
 
-    def forward(self, x, mask):
+    def forward(self, x1, x2, momentum):
+        """
+         Input:
+            x1: first views of images
+            x2: second views of images
+            momentum: momentum of the target encoder
+         Output:
+            loss
+        """
         pass
 
     @torch.jit.ignore
@@ -26,7 +34,7 @@ class COSiam(nn.Module):
         no_weight_decay = set()
         for field_name in ['base_encoder', 'momentum_encoder', 'decoder']:
             field_value = getattr(self, field_name)
-            no_weight_decay.update({field_name + i for i in field_value.no_weight_decay()}) \
+            no_weight_decay.update({f'{field_name}.' + i for i in field_value.no_weight_decay()}) \
                 if hasattr(self.field_value, 'no_weight_decay') else {}
         return no_weight_decay
 
@@ -35,6 +43,6 @@ class COSiam(nn.Module):
         no_weight_decay = set()
         for field_name in ['base_encoder', 'momentum_encoder', 'decoder']:
             field_value = getattr(self, field_name)
-            no_weight_decay.update({field_name + i for i in field_value.no_weight_decay()}) \
+            no_weight_decay.update({f'{field_name}.' + i for i in field_value.no_weight_decay()}) \
                 if hasattr(self.field_value, 'no_weight_decay_keywords') else {}
         return no_weight_decay
