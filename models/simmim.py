@@ -95,42 +95,6 @@ class VisionTransformerForSimMIM(VisionTransformer):
         return x
 
 
-class VisionTransformerForCOSiam(VisionTransformer):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        assert self.num_classes == 0
-
-        self.mask_token = nn.Parameter(torch.zeros(1, 1, self.embed_dim))
-        self._trunc_normal_(self.mask_token, std=.02)
-
-    def _trunc_normal_(self, tensor, mean=0., std=1.):
-        trunc_normal_(tensor, mean=mean, std=std, a=-std, b=std)
-
-    def forward(self, x):
-        x = self.patch_embed(x)
-
-        B, L, _ = x.shape
-
-        cls_tokens = self.cls_token.expand(B, -1, -1)  # stole cls_tokens impl from Phil Wang, thanks
-        x = torch.cat((cls_tokens, x), dim=1)
-
-        if self.pos_embed is not None:
-            x = x + self.pos_embed
-        x = self.pos_drop(x)
-
-        rel_pos_bias = self.rel_pos_bias() if self.rel_pos_bias is not None else None
-        for blk in self.blocks:
-            x = blk(x, rel_pos_bias=rel_pos_bias)
-        x = self.norm(x)
-
-        x = x[:, 1:]
-        B, L, C = x.shape
-        H = W = int(L ** 0.5)
-        x = x.permute(0, 2, 1).reshape(B, C, H, W)
-        return x
-
-
 class SimMIM(nn.Module):
     def __init__(self, encoder, encoder_stride):
         super().__init__()
