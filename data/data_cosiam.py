@@ -1,15 +1,25 @@
+import torch
 import torchvision.transforms as T
+from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 
 from data.mask_generator import MaskGenerator
+from data.transforms import GaussianBlur, Solarization
 
 
 class COSiamMIMTransform:
     def __init__(self, config):
         self.transform_img = T.Compose([
             T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
+            T.RandomGrayscale(p=0.2),
+            GaussianBlur(0.1),
+            Solarization(0.2),
             T.RandomResizedCrop(config.DATA.IMG_SIZE, scale=(0.67, 1.), ratio=(3. / 4., 4. / 3.)),
-            #T.RandomHorizontalFlip(),
+            T.RandomApply(
+                [T.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1)],
+                p=0.8
+            ),
             T.ToTensor(),
+            #T.Normalize(mean=torch.tensor(IMAGENET_DEFAULT_MEAN), std=torch.tensor(IMAGENET_DEFAULT_STD)),
         ])
 
         if config.MODEL.TYPE == 'swin':

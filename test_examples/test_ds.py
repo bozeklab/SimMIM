@@ -1,6 +1,7 @@
 import os
 import cv2
 import numpy as np
+import torch
 
 from torch.utils.data import RandomSampler, BatchSampler, DataLoader
 from torchvision.datasets import ImageFolder
@@ -62,6 +63,33 @@ def add_border(image):
     return bordered_image
 
 
+def gray_out_square(image, x_start, y_start, size, alpha):
+    # Get the dimensions of the image tensor
+    height, width, _ = image.shape
+
+    # Calculate the end coordinates of the square region
+    x_end = min(x_start + size, width)
+    y_end = min(y_start + size, height)
+
+    # Create a gray overlay image
+    gray_overlay = alpha * image[y_start:y_end, x_start:x_end]
+
+    # Replace the square region with the gray overlay
+    image[y_start:y_end, x_start:x_end] = gray_overlay
+
+    return image
+
+
+def gray_out_mask(image, mask, patch_size, alpha):
+    mh, mw = mask.shape
+
+    for i in range(mh):
+        for j in range(mw):
+            if mask[i][j]:
+                image = gray_out_square(image, i * patch_size, j * patch_size, patch_size, alpha)
+    return image
+
+
 def create_image_grid(images):
     # Determine the dimensions of each image in the grid
     rows, cols, _ = images[0].shape
@@ -99,6 +127,20 @@ def create_image_grid(images):
     cv2.destroyAllWindows()
 
 
+def interleave_lists(list1, list2):
+    interleaved = [val for pair in zip(list1, list2) for val in pair]
+    if len(list1) > len(list2):
+        interleaved += list1[len(list2):]
+    elif len(list2) > len(list1):
+        interleaved += list2[len(list1):]
+    return interleaved
+
+
+def tensor_batch_to_list(tensor):
+    tensor_list = [t for t in tensor]
+    return tensor_list
+
+
 if __name__ == '__main__':
     config = _C.clone()
 
@@ -121,9 +163,16 @@ if __name__ == '__main__':
     for idx, (x1, x2, mask, _) in enumerate(dataloader):
         img1 = x1.permute(0, 2, 3, 1)
         img2 = x2.permute(0, 2, 3, 1)
-        images.append(img1[0])
-        images.append(img2[0])
-        if idx == 4:
+
+        img1 = tensor_batch_to_list(img1)
+        img2 = tensor_batch_to_list(img2)
+
+        mask = tensor_batch_to_list(mask)
+
+        img1 = [gray_out_mask(img, mask, config.MODEL.VIT.PATCH_SIZE, alpha=0.5) for img, mask in zip(img1, mask)]
+        imgs = interleave_lists(img1, img2)
+        images.extend(imgs)
+        if idx == 1:
             break
 
     create_image_grid(images)
