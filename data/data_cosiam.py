@@ -51,8 +51,10 @@ class COSiamMIMTransform:
 
 def collate_fn(batch):
     batch_num = len(batch)
-    return {
-        'x1': default_collate([batch[i][0]['x1'] for i in range(batch_num)]),
-        'x2': default_collate([batch[i][0]['x2'] for i in range(batch_num)]),
-        'mask': default_collate([batch[i][0]['mask'] for i in range(batch_num)]),
-    }
+    keys = batch[0][0].keys()
+    collated = {}
+
+    for key in keys:
+        collated[key] = default_collate([batch[i][0][key] for i in range(batch_num)])
+
+    return collated
