@@ -1,6 +1,7 @@
 import torch
 import torchvision.transforms as T
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
+from torch.utils.data import default_collate
 
 from data.mask_generator import MaskGenerator
 from data.transforms import GaussianBlur, Solarization
@@ -41,5 +42,17 @@ class COSiamMIMTransform:
         x2 = self.transform_img(img)
         mask = self.mask_generator()
 
-        return x1, x2, mask
+        return {
+            'x1': x1,
+            'x2': x2,
+            'mask': mask
+        }
 
+
+def collate_fn(batch):
+    batch_num = len(batch)
+    return {
+        'x1': default_collate([batch[i][0]['x1'] for i in range(batch_num)]),
+        'x2': default_collate([batch[i][0]['x2'] for i in range(batch_num)]),
+        'mask': default_collate([batch[i][0]['mask'] for i in range(batch_num)]),
+    }

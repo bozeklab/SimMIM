@@ -7,8 +7,7 @@ from torch.utils.data import RandomSampler, BatchSampler, DataLoader
 from torchvision.datasets import ImageFolder
 from yacs.config import CfgNode as CN
 
-from data.data_cosiam import COSiamMIMTransform
-from data.data_simmim import collate_fn
+from data.data_cosiam import COSiamMIMTransform, collate_fn
 from logger import create_logger
 
 _C = CN()
@@ -21,7 +20,7 @@ _C.BASE = ['']
 # -----------------------------------------------------------------------------
 _C.DATA = CN()
 # Batch size for a single GPU, could be overwritten by command line argument
-_C.DATA.BATCH_SIZE = 2
+_C.DATA.BATCH_SIZE = 4
 # Path to dataset, could be overwritten by command line argument
 _C.DATA.DATA_PATH = '/Users/piotrwojcik/sample_he/'
 # Dataset name
@@ -160,7 +159,11 @@ if __name__ == '__main__':
 
     images = []
 
-    for idx, (x1, x2, mask, _) in enumerate(dataloader):
+    for idx, sample in enumerate(dataloader):
+        x1 = sample['x1']
+        x2 = sample['x2']
+        mask = sample['mask']
+
         img1 = x1.permute(0, 2, 3, 1)
         img2 = x2.permute(0, 2, 3, 1)
 
