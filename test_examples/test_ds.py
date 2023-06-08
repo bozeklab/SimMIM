@@ -20,7 +20,7 @@ _C.BASE = ['']
 # -----------------------------------------------------------------------------
 _C.DATA = CN()
 # Batch size for a single GPU, could be overwritten by command line argument
-_C.DATA.BATCH_SIZE = 4
+_C.DATA.BATCH_SIZE = 2
 # Path to dataset, could be overwritten by command line argument
 _C.DATA.DATA_PATH = '/Users/piotrwojcik/sample_he/'
 # Dataset name
@@ -95,7 +95,7 @@ def create_image_grid(images):
 
     # Determine the number of images and columns in the grid
     num_images = len(images)
-    num_cols = 2
+    num_cols = 3
 
     # Set the border size and color
     border_size = 5
@@ -126,12 +126,14 @@ def create_image_grid(images):
     cv2.destroyAllWindows()
 
 
-def interleave_lists(list1, list2):
-    interleaved = [val for pair in zip(list1, list2) for val in pair]
-    if len(list1) > len(list2):
-        interleaved += list1[len(list2):]
-    elif len(list2) > len(list1):
-        interleaved += list2[len(list1):]
+def interleave_lists(*lists):
+    max_length = max(len(lst) for lst in lists)
+    interleaved = [val for pair in zip(*lists) for val in pair]
+
+    for lst in lists:
+        if len(lst) > max_length:
+            interleaved += lst[max_length:]
+
     return interleaved
 
 
@@ -160,20 +162,25 @@ if __name__ == '__main__':
     images = []
 
     for idx, sample in enumerate(dataloader):
+        x0 = sample['x0']
         x1 = sample['x1']
         x2 = sample['x2']
+        pos = sample['pos']
+
         mask = sample['mask']
 
+        img0 = x0.permute(0, 2, 3, 1)
         img1 = x1.permute(0, 2, 3, 1)
         img2 = x2.permute(0, 2, 3, 1)
 
+        img0 = tensor_batch_to_list(img0)
         img1 = tensor_batch_to_list(img1)
         img2 = tensor_batch_to_list(img2)
 
         mask = tensor_batch_to_list(mask)
 
         img1 = [gray_out_mask(img, mask, config.MODEL.VIT.PATCH_SIZE, alpha=0.5) for img, mask in zip(img1, mask)]
-        imgs = interleave_lists(img1, img2)
+        imgs = interleave_lists(img0, img1, img2)
         images.extend(imgs)
         if idx == 1:
             break

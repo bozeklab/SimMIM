@@ -4,22 +4,24 @@ from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from torch.utils.data import default_collate
 
 from data.mask_generator import MaskGenerator
-from data.transforms import GaussianBlur, Solarization
+from data.transforms import GaussianBlur, Solarization, RandomResizedCrop
 
 
 class COSiamMIMTransform:
     def __init__(self, config):
+        self.to_tensor = T.ToTensor()
+
         self.transform_img = T.Compose([
             T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
             T.RandomGrayscale(p=0.2),
             GaussianBlur(0.1),
             Solarization(0.2),
-            T.RandomResizedCrop(config.DATA.IMG_SIZE, scale=(0.67, 1.), ratio=(3. / 4., 4. / 3.)),
             T.RandomApply(
                 [T.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1)],
                 p=0.8
             ),
             T.ToTensor(),
+            RandomResizedCrop(config.DATA.IMG_SIZE, scale=(0.67, 1.), ratio=(3. / 4., 4. / 3.)),
             #T.Normalize(mean=torch.tensor(IMAGENET_DEFAULT_MEAN), std=torch.tensor(IMAGENET_DEFAULT_STD)),
         ])
 
@@ -38,13 +40,16 @@ class COSiamMIMTransform:
         )
 
     def __call__(self, img):
-        x1 = self.transform_img(img)
-        x2 = self.transform_img(img)
+        x1, pos1 = self.transform_img(img)
+        x2, pos2 = self.transform_img(img)
+        pos = pos1 + pos2
         mask = self.mask_generator()
 
         return {
+            'x0': self.to_tensor(img),
             'x1': x1,
             'x2': x2,
+            'pos': pos,
             'mask': mask
         }
 
@@ -55,6 +60,12 @@ def collate_fn(batch):
     collated = {}
 
     for key in keys:
-        collated[key] = default_collate([batch[i][0][key] for i in range(batch_num)])
+        if key == 'pos':
+            crops = [batch[i][0][key] for i in range(batch_num)]
+            crops = [item for tup in crops for item in tup]
+            crops = default_collate(crops).view(batch_num, -1)
+            collated[key] = crops
+        else:
+            collated[key] = default_collate([batch[i][0][key] for i in range(batch_num)])
 
     return collated
