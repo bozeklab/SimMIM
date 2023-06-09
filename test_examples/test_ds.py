@@ -2,10 +2,15 @@ import os
 import cv2
 import numpy as np
 import torch
+from PIL.Image import Image
 
 from torch.utils.data import RandomSampler, BatchSampler, DataLoader
+from torchvision import transforms
 from torchvision.datasets import ImageFolder
+from torchvision.utils import draw_bounding_boxes
 from yacs.config import CfgNode as CN
+import torchvision.transforms as T
+from torchvision.ops import masks_to_boxes
 
 from data.data_cosiam import COSiamMIMTransform, collate_fn
 from logger import create_logger
@@ -121,7 +126,7 @@ def create_image_grid(images):
     grid = grid.astype(np.uint8)
 
     # Display the grid image using OpenCV
-    cv2.imshow("Augmentations", grid)
+    cv2.imshow("image", grid)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
@@ -135,6 +140,42 @@ def interleave_lists(*lists):
             interleaved += lst[max_length:]
 
     return interleaved
+
+
+normalize = transforms.Compose([
+    lambda x: x.float() / 255.0,
+    lambda x: torch.permute(x, (1, 2, 0)),
+])
+
+denormalize = transforms.Compose([
+    lambda x: torch.permute(x, (2, 0, 1)),
+    lambda x: x * 255.0,
+    lambda x: x.to(torch.uint8)
+])
+
+
+def draw_crop_boxes(images, crops):
+    boxes = crops.clone()
+
+    annotated_images = []
+
+    for idx, image in enumerate(images):
+        view1_box = boxes[idx, :4]
+        view1_box[2:], view1_box[3] = view1_box[:2] + view1_box[2:], view1_box[1] + view1_box[3]
+        view1_box = view1_box.unsqueeze(0)
+        view1_box[:, [0, 1, 2, 3]] = view1_box[:, [1, 0, 3, 2]]
+
+        view2_box = boxes[idx, 4:]
+        view2_box[2:], view2_box[3] = view2_box[:2] + view2_box[2:], view2_box[1] + view2_box[3]
+        view2_box = view2_box.unsqueeze(0)
+        view2_box[:, [0, 1, 2, 3]] = view2_box[:, [1, 0, 3, 2]]
+
+        views_boxes = torch.cat([view1_box, view2_box], dim=0)
+
+        annotated_image = draw_bounding_boxes(denormalize(image), views_boxes, width=2, colors=["yellow", "green"])
+        annotated_images.append(normalize(annotated_image))
+    annotated_images = [img for img in annotated_images]
+    return annotated_images
 
 
 def tensor_batch_to_list(tensor):
@@ -179,6 +220,7 @@ if __name__ == '__main__':
 
         mask = tensor_batch_to_list(mask)
 
+        img0 = draw_crop_boxes(img0, pos)
         img1 = [gray_out_mask(img, mask, config.MODEL.VIT.PATCH_SIZE, alpha=0.5) for img, mask in zip(img1, mask)]
         imgs = interleave_lists(img0, img1, img2)
         images.extend(imgs)
