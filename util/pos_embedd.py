@@ -8,6 +8,7 @@ import torch.nn as nn
 # MoCo v3: https://github.com/facebookresearch/moco-v3
 # --------------------------------------------------------
 import torch
+from typing import Tuple
 from torch import Tensor
 
 
@@ -42,7 +43,7 @@ class PositionalEncoding(nn.Module):
         # h2 / h1
         batch_size = pos.shape[0]
 
-        grid = grid.unsqueeze(dim=0)
+        grid = np.expand_dims(grid, axis=0)
 
         h = pos[:, 6] / pos[:, 2]
         # w2 / w1
@@ -96,6 +97,15 @@ class PositionalEncoding(nn.Module):
         emb = np.concatenate([emb_sin, emb_cos], axis=1)  # (M, D)
         return emb
 
-    def forward(self, pos) -> Tensor:
-        pass
+    def calculate_grid(self, pos, grid_size) -> Tuple[Tensor, Tensor]:
+        grid_h = np.arange(grid_size, dtype=np.float32)
+        grid_w = np.arange(grid_size, dtype=np.float32)
+        grid = np.meshgrid(grid_w, grid_h)  # here w goes first
+        grid = np.stack(grid, axis=0)
+
+        grid1 = grid.reshape([2, grid_size, grid_size])
+        grid2 = grid.copy()
+        grid2 = PositionalEncoding.encode_relative_position(grid2, pos, grid_size)
+
+        return torch.tensor(grid1), torch.tensor(grid2)
 

@@ -27,18 +27,53 @@ class TestPositionalEncoding(unittest.TestCase):
         encoded_grid = pos_enc.encode_relative_position(grid, pos, grid_size)
         encoded_grid = torch.tensor(encoded_grid)
 
-        expected_encoded_grid = torch.tensor([[[[0.0000, 1.0000],
-                                                [0.0000, 1.0000]],
+        expected_encoded_grid = torch.tensor([[[[0.0, 1.0],
+                                                [0.0, 1.0]],
 
-                                               [[0.0000, 0.0000],
-                                                [1.0000, 1.0000]]],
+                                               [[0.0, 0.0],
+                                                [1.0, 1.0]]],
 
-                                              [[[1.0000, 1.5000],
-                                                [1.0000, 1.5000]],
+                                              [[[1.0, 1.5],
+                                                [1.0, 1.5]],
 
-                                               [[1.0000, 1.0000],
-                                                [1.5000, 1.5000]]]], dtype = torch.float32)
+                                               [[1.0, 1.0],
+                                                [1.5, 1.5]]]], dtype=torch.float32)
         self.assertTrue(torch.allclose(encoded_grid, expected_encoded_grid))
+
+    def test_calculate_grid(self):
+        grid_size = 2
+        pos = torch.tensor([[1, 1, 2, 2, 1, 1, 2, 2], [0, 0, 2, 2, 1, 1, 1, 1]], dtype=torch.float32)
+
+        pos_enc = PositionalEncoding(4)
+        encoded_grid1, encoded_grid2 = pos_enc.calculate_grid(pos, grid_size)
+
+        expected_encoded_grid1 = torch.tensor([[[[0.0, 1.0],
+                                                [0.0, 1.0]],
+
+                                               [[0.0, 0.0],
+                                                [1.0, 1.0]]],
+
+                                              [[[0.0, 1.0],
+                                                [0.0, 1.0]],
+
+                                               [[0.0, 0.0],
+                                                [1.0, 1.0]]]], dtype=torch.float32)
+
+        expected_encoded_grid2 = torch.tensor([[[[0.0, 1.0],
+                                                [0.0, 1.0]],
+
+                                               [[0.0, 0.0],
+                                                [1.0, 1.0]]],
+
+                                              [[[1.0, 1.5],
+                                                [1.0, 1.5]],
+
+                                               [[1.0, 1.0],
+                                                [1.5, 1.5]]]], dtype=torch.float32)
+
+        self.assertTrue(torch.allclose(encoded_grid1, expected_encoded_grid1))
+        self.assertTrue(torch.allclose(encoded_grid2, expected_encoded_grid2))
+
 
     def test_get_2d_sincos_pos_embed_from_grid(self):
         embed_dim = 4
