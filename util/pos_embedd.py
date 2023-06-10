@@ -69,11 +69,14 @@ class PositionalEncoding(nn.Module):
     def get_2d_sincos_pos_embed_from_grid(embed_dim, grid):
         assert embed_dim % 2 == 0
 
-        # use half of dimensions to encode grid_h
-        emb_h = PositionalEncoding.get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[0])  # (H*W, D/2)
-        emb_w = PositionalEncoding.get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[1])  # (H*W, D/2)
+        batch_size, _, h, w = grid.shape
 
-        emb = np.concatenate([emb_h, emb_w], axis=1) # (H*W, D)
+        # use half of dimensions to encode grid_h
+        emb_h = PositionalEncoding.get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[:, 0])  # (N, H*W, D/2)
+        emb_w = PositionalEncoding.get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[:, 1])  # (N, H*W, D/2)
+
+        emb = np.concatenate([emb_h, emb_w], axis=1) # (N, H*W, D)
+        emb = np.reshape(emb, (batch_size, h*w, embed_dim))
         return emb
 
     @staticmethod
@@ -98,14 +101,33 @@ class PositionalEncoding(nn.Module):
         return emb
 
     def calculate_grid(self, pos, grid_size) -> Tuple[Tensor, Tensor]:
+        batch_size = pos.shape[0]
+
         grid_h = np.arange(grid_size, dtype=np.float32)
         grid_w = np.arange(grid_size, dtype=np.float32)
         grid = np.meshgrid(grid_w, grid_h)  # here w goes first
         grid = np.stack(grid, axis=0)
 
         grid1 = grid.reshape([2, grid_size, grid_size])
-        grid2 = grid.copy()
+        grid2 = grid1.copy()
+
+        grid1 = np.repeat(grid1[np.newaxis, :], batch_size, axis=0)
+
         grid2 = PositionalEncoding.encode_relative_position(grid2, pos, grid_size)
 
         return torch.tensor(grid1), torch.tensor(grid2)
+
+    def forward(self, pos, grid_size) -> Tuple[Tensor, Tensor]:
+        batch_size = pos.shape[0]
+        grid1, grid2 = self.calculate_grid(pos, grid_size)
+
+        pos_embed1 = PositionalEncoding.get_2d_sincos_pos_embed_from_grid(self.embed_dim, grid1)
+        pos_embed2 = PositionalEncoding.get_2d_sincos_pos_embed_from_grid(self.embed_dim, grid2)
+
+        pos_embed1 = pos_embed1.view(batch_size, -1)
+        pos_embed2 = pos_embed2.view(batch_size, -1)
+
+        return pos_embed1, pos_embed2
+
+
 
