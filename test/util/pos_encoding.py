@@ -27,16 +27,17 @@ class TestPositionalEncoding(unittest.TestCase):
         encoded_grid = pos_enc.encode_relative_position(grid, pos, grid_size)
         encoded_grid = torch.tensor(encoded_grid)
 
+        expected_encoded_grid = torch.tensor([[[[0.0000, 1.0000],
+                                                [0.0000, 1.0000]],
 
-        expected_encoded_grid = torch.tensor([[[[[0.0000, 1.0000],
-                                                 [0.0000, 1.0000]]],
-                                               [[[0.0000, 0.0000],
-                                                 [1.0000, 1.0000]]]],
+                                               [[0.0000, 0.0000],
+                                                [1.0000, 1.0000]]],
 
-                                              [[[[1.0000, 1.5000],
-                                                 [1.0000, 1.5000]]],
-                                               [[[1.0000, 1.0000],
-                                                 [1.5000, 1.5000]]]]], dtype=torch.float32)
+                                              [[[1.0000, 1.5000],
+                                                [1.0000, 1.5000]],
+
+                                               [[1.0000, 1.0000],
+                                                [1.5000, 1.5000]]]], dtype = torch.float32)
         self.assertTrue(torch.allclose(encoded_grid, expected_encoded_grid))
 
     def test_get_2d_sincos_pos_embed_from_grid(self):

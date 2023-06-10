@@ -30,7 +30,7 @@ class PositionalEncoding(nn.Module):
         grid = np.meshgrid(grid_w, grid_h)  # here w goes first
         grid = np.stack(grid, axis=0)
 
-        grid = grid.reshape([2, 1, grid_size, grid_size])
+        grid = grid.reshape([2, grid_size, grid_size])
         pos_embed = PositionalEncoding.get_2d_sincos_pos_embed_from_grid(embed_dim, grid)
         if cls_token:
             pos_embed = np.concatenate([np.zeros([1, embed_dim]), pos_embed], axis=0)
@@ -47,15 +47,15 @@ class PositionalEncoding(nn.Module):
         h = pos[:, 6] / pos[:, 2]
         # w2 / w1
         w = pos[:, 7] / pos[:, 3]
-        h = h.reshape(batch_size, 1, 1, 1, 1)
-        w = w.reshape(batch_size, 1, 1, 1, 1)
+        h = h.reshape(batch_size, 1, 1, 1)
+        w = w.reshape(batch_size, 1, 1, 1)
 
         # Nh * (i2 - i1) / h1
         b_h = grid_size * (pos[:, 4] - pos[:, 0]) / pos[:, 2]
         # Nw * (j2 - j1) / w1
         b_w = grid_size * (pos[:, 5] - pos[:, 1]) / pos[:, 3]
-        b_h = b_h.reshape(batch_size, 1, 1, 1, 1)
-        b_w = b_w.reshape(batch_size, 1, 1, 1, 1)
+        b_h = b_h.reshape(batch_size, 1, 1, 1)
+        b_w = b_w.reshape(batch_size, 1, 1, 1)
 
         rp_h = np.multiply(grid[:, 0], h) + b_h
         rp_w = np.multiply(grid[:, 1], w) + b_w
@@ -96,6 +96,6 @@ class PositionalEncoding(nn.Module):
         emb = np.concatenate([emb_sin, emb_cos], axis=1)  # (M, D)
         return emb
 
-    def forward(self, second_view=False) -> Tensor:
+    def forward(self, pos) -> Tensor:
         pass
 
