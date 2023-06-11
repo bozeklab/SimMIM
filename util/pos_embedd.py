@@ -11,6 +11,8 @@ import torch
 from typing import Tuple
 from torch import Tensor
 
+from test_examples.mae_pos_encoding import get_2d_sincos_pos_embed
+
 
 class PositionalEncoding(nn.Module):
     def __init__(self, embed_dim):
@@ -118,14 +120,13 @@ class PositionalEncoding(nn.Module):
         return torch.tensor(grid1), torch.tensor(grid2)
 
     def forward(self, pos, grid_size) -> Tuple[Tensor, Tensor]:
-        batch_size = pos.shape[0]
         grid1, grid2 = self.calculate_grid(pos, grid_size)
 
         pos_embed1 = PositionalEncoding.get_2d_sincos_pos_embed_from_grid(self.embed_dim, grid1)
         pos_embed2 = PositionalEncoding.get_2d_sincos_pos_embed_from_grid(self.embed_dim, grid2)
 
-        pos_embed1 = pos_embed1.view(batch_size, -1)
-        pos_embed2 = pos_embed2.view(batch_size, -1)
+        pos_embed1 = torch.tensor(pos_embed1)
+        pos_embed2 = torch.tensor(pos_embed2)
 
         return pos_embed1, pos_embed2
 
