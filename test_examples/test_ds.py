@@ -144,11 +144,11 @@ def interleave_lists(*lists):
 
 normalize = transforms.Compose([
     lambda x: x.float() / 255.0,
-    lambda x: torch.permute(x, (1, 2, 0)),
+    lambda x: torch.einsum('chw->hwc', x),
 ])
 
 denormalize = transforms.Compose([
-    lambda x: torch.permute(x, (2, 0, 1)),
+    lambda x: torch.einsum('hwc->chw', x),
     lambda x: x * 255.0,
     lambda x: x.to(torch.uint8)
 ])
