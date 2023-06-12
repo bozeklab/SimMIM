@@ -53,6 +53,10 @@ _C.MODEL.NAME = 'cosiam'
 _C.MODEL.VIT = CN()
 _C.MODEL.VIT.PATCH_SIZE = 16
 
+# Pretraining projection head
+_C.MODEL.VIT.NUM_PROJECTION_LAYERS = 3
+_C.MODEL.VIT.LAST_PROJECTION_BN = True
+
 
 def add_border(image):
     # Get the dimensions of the image tensor

@@ -101,6 +101,21 @@ class TestPositionalEmbedding(unittest.TestCase):
         expected_shape = (4, embed_dim)
         self.assertEqual(pos_embed.shape, expected_shape)
 
+    def test_encode_scale_variation(self):
+        random_crop = torch.tensor([[0, 0, 16, 16, 5, 5, 11, 11],
+                                    [0, 0, 16, 16, 6, 7, 10, 9],
+                                    [0, 0, 16, 16, 5, 5, 9, 9]], dtype=torch.float32)
+
+        scale_variation = PositionalEmbedding.encode_scale_variation(random_crop)
+
+        expected_scale_variation = torch.tensor([[[[-3.74693]], [[-3.74693]]],
+                                                 [[[-4.70004]], [[-5.75364]]],
+                                                 [[[-5.75364]], [[-5.75364]]]])
+
+        expected_scale_shape = (3, 2, 1, 1)
+        self.assertEqual(scale_variation.shape, expected_scale_shape)
+        self.assertTrue(torch.allclose(torch.tensor(scale_variation), expected_scale_variation))
+
 
 if __name__ == '__main__':
     unittest.main()

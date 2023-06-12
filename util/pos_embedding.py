@@ -22,11 +22,11 @@ class PositionalEmbedding(nn.Module):
     @staticmethod
     def encode_relative_position(grid, random_crop, grid_size):
         # i1, j1, h1, w1, i2, j2, h2, w2
-        # h2 / h1
         batch_size = random_crop.shape[0]
 
         grid = np.expand_dims(grid, axis=0)
 
+        # h2 / h1
         h = random_crop[:, 6] / random_crop[:, 2]
         # w2 / w1
         w = random_crop[:, 7] / random_crop[:, 3]
@@ -44,7 +44,20 @@ class PositionalEmbedding(nn.Module):
         rp_w = np.multiply(grid[:, 1], w) + b_w
 
         rp = np.concatenate([rp_h, rp_w], axis=1)
+        return rp
 
+    @staticmethod
+    def encode_scale_variation(random_crop):
+        batch_size = random_crop.shape[0]
+        # h2 / h1
+        h = random_crop[:, 6] / random_crop[:, 2]
+        # w2 / w1
+        w = random_crop[:, 7] / random_crop[:, 3]
+        h = h.reshape(batch_size, 1, 1, 1)
+        w = w.reshape(batch_size, 1, 1, 1)
+
+        rp = np.concatenate([h, w], axis=1)
+        rp = 10. * np.log(rp)
         return rp
 
     @staticmethod
@@ -56,7 +69,7 @@ class PositionalEmbedding(nn.Module):
         emb_h = PositionalEmbedding.get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[:, 0])  # (N, H*W, D/2)
         emb_w = PositionalEmbedding.get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[:, 1])  # (N, H*W, D/2)
 
-        emb = np.concatenate([emb_h, emb_w], axis=1) # (N, H*W, D)
+        emb = np.concatenate([emb_h, emb_w], axis=1)    # (N, H*W, D)
         emb = np.reshape(emb, (batch_size, h*w, embed_dim))
         return emb
 

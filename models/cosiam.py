@@ -6,16 +6,38 @@ from .vision_transformer import VisionTransformer
 
 
 class VisionTransformerForCOSiam(VisionTransformer):
-    def __init__(self, **kwargs):
+    def __init__(self, num_projection_layers, last_projection_bn, **kwargs):
         super().__init__(**kwargs)
 
         assert self.num_classes == 0
 
         self.mask_token = nn.Parameter(torch.zeros(1, 1, self.embed_dim))
+        self.num_projection_layers = num_projection_layers
+        self.last_projection_bn = last_projection_bn
         self._trunc_normal_(self.mask_token, std=.02)
 
     def _trunc_normal_(self, tensor, mean=0., std=1.):
         trunc_normal_(tensor, mean=mean, std=std, a=-std, b=std)
+
+    def _build_mlp(self):
+        mlp_hidden_dim = int(self.embed_dim * self.mlp_ratio)
+
+        mlp = []
+        for l in range(self.num_projection_layers):
+            dim1 = self.embed_dim if l == 0 else mlp_hidden_dim
+            dim2 = self.embed_dim if l == self.num_projection_layers - 1 else mlp_hidden_dim
+
+            mlp.append(nn.Linear(dim1, dim2, bias=False))
+
+            if l < self.num_projection_layers - 1:
+                mlp.append(nn.BatchNorm1d(dim2))
+                mlp.append(nn.ReLU(inplace=True))
+            elif self.last_projection_bn:
+                # follow SimCLR's design: https://github.com/google-research/simclr/blob/master/model_util.py#L157
+                # for simplicity, we further removed gamma in BN
+                mlp.append(nn.BatchNorm1d(dim2, affine=False))
+
+        return nn.Sequential(*mlp)
 
     def forward(self, x):
         x = self.patch_embed(x)
@@ -77,7 +99,6 @@ class COSiam(nn.Module):
         with torch.no_grad():  # no gradient
             self._update_momentum_encoder(m)    # update the momentum encoder
             x_b = self.momentum_encoder(x2)
-
 
     @torch.jit.ignore
     def no_weight_decay(self):
