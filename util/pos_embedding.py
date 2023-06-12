@@ -116,8 +116,16 @@ class PositionalEmbedding(nn.Module):
         pos_embed1 = PositionalEmbedding.get_2d_sincos_pos_embed_from_grid(self.embed_dim, grid1)
         pos_embed2 = PositionalEmbedding.get_2d_sincos_pos_embed_from_grid(self.embed_dim, grid2)
 
-        pos_embed1 = torch.tensor(pos_embed1)
-        pos_embed2 = torch.tensor(pos_embed2)
+        pos_embed1 = torch.tensor(pos_embed1, dtype=torch.float32)
+        pos_embed2 = torch.tensor(pos_embed2, dtype=torch.float32)
+
+        scale_variation = self.encode_scale_variation(random_crop)
+        scale_variation = PositionalEmbedding.get_2d_sincos_pos_embed_from_grid(self.embed_dim, scale_variation)
+        scale_variation = torch.tensor(scale_variation, dtype=torch.float32)
+
+        scale_variation = scale_variation.repeat(1, pos_embed2.shape[1], 1)
+
+        pos_embed2 = self.dim_fix(torch.concat([pos_embed2, scale_variation], dim=-1))
 
         return pos_embed1, pos_embed2
 
