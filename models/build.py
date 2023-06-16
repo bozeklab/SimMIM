@@ -13,7 +13,7 @@ from .simmim import build_simmim
 
 def build_model(config, is_pretrain=True):
     if is_pretrain:
-        if 'cosiam' in config.MODEL.name:
+        if 'cosiam' in config.MODEL.NAME:
             model = build_cosiam(config)
         else:
             models= build_simmim(config)
