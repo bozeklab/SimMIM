@@ -127,11 +127,18 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, lr_scheduler):
 
     start = time.time()
     end = time.time()
-    for idx, (img, mask, _) in enumerate(data_loader):
-        img = img.cuda(non_blocking=True)
+    for idx, sample in enumerate(data_loader):
+        x1 = sample['x1']
+        x2 = sample['x2']
+        random_crop = sample['random_crop']
+        mask = sample['mask']
+
+        x1 = x1.cuda(non_blocking=True)
+        x2 = x2.cuda(non_blocking=True)
+        random_crop = random_crop.cuda(non_blocking=True)
         mask = mask.cuda(non_blocking=True)
 
-        loss = model(img, mask)
+        loss = model(x1, x2, random_crop, m, mask)
 
         if config.TRAIN.ACCUMULATION_STEPS > 1:
             loss = loss / config.TRAIN.ACCUMULATION_STEPS

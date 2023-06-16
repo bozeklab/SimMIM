@@ -214,7 +214,6 @@ if __name__ == '__main__':
         x1 = sample['x1']
         x2 = sample['x2']
         pos = sample['random_crop']
-
         mask = sample['mask']
 
         img0 = x0.permute(0, 2, 3, 1)
