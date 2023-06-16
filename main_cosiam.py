@@ -18,6 +18,7 @@ import torch.distributed as dist
 from timm.utils import AverageMeter
 
 from config import get_config
+from data.data_cosiam import build_loader_cosiam
 from models import build_model
 from data import build_loader
 from lr_scheduler import build_scheduler
@@ -66,7 +67,7 @@ def parse_option():
 
 
 def main(config):
-    data_loader_train = build_loader(config, logger, is_pretrain=True)
+    data_loader_train = build_loader_cosiam(config, logger)
 
     logger.info(f"Creating model:{config.MODEL.TYPE}/{config.MODEL.NAME}")
     model = build_model(config, is_pretrain=True)

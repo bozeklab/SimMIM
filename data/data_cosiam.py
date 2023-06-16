@@ -1,7 +1,11 @@
+from distutils import dist
+
 import torch
 import torchvision.transforms as T
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
+from torch.utils.data import DataLoader, DistributedSampler
 from torch.utils.data import default_collate
+from torchvision.datasets import ImageFolder
 
 from data.mask_generator import MaskGenerator
 from data.transforms import GaussianBlur, Solarization, RandomResizedCrop
@@ -69,3 +73,17 @@ def collate_fn(batch):
             collated[key] = default_collate([batch[i][0][key] for i in range(batch_num)])
 
     return collated
+
+
+def build_loader_cosiam(config, logger):
+    transform = COSiamMIMTransform(config)
+    logger.info(f'Pre-train data transform:\n{transform}')
+
+    dataset = ImageFolder(config.DATA.DATA_PATH, transform)
+    logger.info(f'Build dataset: train images = {len(dataset)}')
+
+    sampler = DistributedSampler(dataset, num_replicas=dist.get_world_size(), rank=dist.get_rank(), shuffle=True)
+    dataloader = DataLoader(dataset, config.DATA.BATCH_SIZE, sampler=sampler, num_workers=config.DATA.NUM_WORKERS,
+                            pin_memory=True, drop_last=True, collate_fn=collate_fn)
+
+    return dataloader
