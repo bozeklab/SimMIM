@@ -107,7 +107,7 @@ def main(config):
     for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
         data_loader_train.sampler.set_epoch(epoch)
 
-        train_one_epoch(config, model, data_loader_train, optimizer, epoch, lr_scheduler, config.MODEL.BASE_MOMENTUM)
+        train_one_epoch(config, model, data_loader_train, optimizer, epoch, lr_scheduler, config.TRAIN.BASE_MOMENTUM)
         if dist.get_rank() == 0 and (epoch % config.SAVE_FREQ == 0 or epoch == (config.TRAIN.EPOCHS - 1)):
             save_checkpoint(config, epoch, model_without_ddp, 0., optimizer, lr_scheduler, logger)
 
