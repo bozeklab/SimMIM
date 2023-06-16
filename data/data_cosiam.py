@@ -1,4 +1,4 @@
-from distutils import dist
+import torch.distributed as dist
 
 import torch
 import torchvision.transforms as T
