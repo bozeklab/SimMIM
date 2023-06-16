@@ -13,7 +13,10 @@ from .simmim import build_simmim
 
 def build_model(config, is_pretrain=True):
     if is_pretrain:
-        model = build_simmim(config)
+        if 'cosiam' in config.MODEL.name:
+            model = build_cosiam(config)
+        else:
+            models= build_simmim(config)
     else:
         model_type = config.MODEL.TYPE
         if model_type == 'swin':
