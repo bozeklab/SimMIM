@@ -124,6 +124,7 @@ _C.MODEL.DECODER.VIT.USE_MEAN_POOLING = False
 # Training settings
 # -----------------------------------------------------------------------------
 _C.TRAIN = CN()
+_C.TRAIN.BASE_MOMENTUM = 0.996
 _C.TRAIN.START_EPOCH = 0
 _C.TRAIN.EPOCHS = 300
 _C.TRAIN.WARMUP_EPOCHS = 20
