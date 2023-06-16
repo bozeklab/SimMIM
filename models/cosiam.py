@@ -67,7 +67,7 @@ class VisionTransformerEncoder(VisionTransformer):
 
         B, L, C = x.shape
         H = W = int(L ** 0.5)
-        x = x.permute(0, 2, 1).reshape(B, C, H, W)
+        x = x.reshape(B, H, W, C)
         return x
 
 
@@ -85,15 +85,20 @@ class VisionTransformerDecoder(VisionTransformer):
     def _trunc_normal_(self, tensor, mean=0., std=1.):
         trunc_normal_(tensor, mean=mean, std=std, a=-std, b=std)
 
-    def forward(self, x, mask):
-        B, L, _ = x.shape
+    def forward(self, x, random_crop, mask):
+        B, H, W, C = x.shape
+
+        x = x.reshape(B, H * W, C)
 
         mask_token = self.mask_token.expand(B, L, -1)
         w = mask.flatten(1).unsqueeze(-1).type_as(mask_token)
         x = x * (1 - w) + mask_token * w
 
-        if self.pos_embed is not None:
-            x = x + self.pos_embed
+        p_a, p_b = self.pos_embed(random_crop, H)
+        p_a = p_a.flatten(1)
+        p_b = p_b.flatten(1)
+        p = p_a * (1 - w) + p_b * w
+        x = x + p
         x = self.pos_drop(x)
 
         rel_pos_bias = None
@@ -101,9 +106,6 @@ class VisionTransformerDecoder(VisionTransformer):
             x = blk(x, rel_pos_bias=rel_pos_bias)
         x = self.norm(x)
 
-        B, L, C = x.shape
-        H = W = int(L ** 0.5)
-        x = x.permute(0, 2, 1).reshape(B, C, H, W)
         return x
 
 
@@ -165,13 +167,23 @@ class COSiam(nn.Module):
             self._update_momentum_encoder(m)    # update the momentum encoder
             x_b = self.momentum_encoder(x2)
 
-        B, C, H, W = y_a.shape
-        assert H == W
-        p_a, p_b = self.pos_embed(random_crop, H, cls_token=False)
+        y_b = self.decoder(y_a, random_crop, mask)
 
+        return y_b, x_b
 
-    def forwards(self, x1, x2, m, mask):
-        pass
+    def forward(self, x1, x2, random_crop, m, mask):
+        z1, z1m = self.forward_features(x1, x2, random_crop, m, mask)
+        random_crop = torch.concat([random_crop[:, 4:], random_crop[:, :4]], dim=1)
+        z2, z2m = self.forward_features(x2, x2, random_crop, m, mask)
+
+        B, L, C = z1.shape
+        z1 = z1.view((B * L, C))
+        z1m = z1m.view((B * L, C))
+        z2 = z2.view((B * L, C))
+        z2m = z2m.view((B * L, C))
+
+        loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
+
 
     @torch.jit.ignore
     def no_weight_decay(self):
@@ -209,10 +221,9 @@ def build_cosiam(config):
             use_rel_pos_bias=config.MODEL.ENCODER.VIT.USE_RPB,
             use_shared_rel_pos_bias=config.MODEL.ENCODER.VIT.USE_SHARED_RPB,
             use_mean_pooling=config.MODEL.ENCODER.VIT.USE_MEAN_POOLING,
-            num_projection_layers=config.MODEL.ENCODER.VIT.NUM_PROJECTION_LAYERS,
-            is_encoder=True)
+            num_projection_layers=config.MODEL.ENCODER.VIT.NUM_PROJECTION_LAYERS)
 
-        decoder = VisionTransformerEncoder(
+        decoder = VisionTransformerDecoder(
             img_size=config.DATA.IMG_SIZE,
             patch_size=config.MODEL.DECODER.VIT.PATCH_SIZE,
             in_chans=config.MODEL.DECODER.VIT.IN_CHANS,
@@ -228,8 +239,7 @@ def build_cosiam(config):
             use_abs_pos_emb=config.MODEL.DECODER.VIT.USE_APE,
             use_rel_pos_bias=config.MODEL.DECODER.VIT.USE_RPB,
             use_shared_rel_pos_bias=config.MODEL.DECODER.VIT.USE_SHARED_RPB,
-            use_mean_pooling=config.MODEL.DECODER.VIT.USE_MEAN_POOLING,
-            is_encoder=False)
+            use_mean_pooling=config.MODEL.DECODER.VIT.USE_MEAN_POOLING)
     else:
         raise NotImplementedError(f"Unknown pre-train model: {model_type}")
 
