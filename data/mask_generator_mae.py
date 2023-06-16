@@ -6,7 +6,7 @@ class MaskGeneratorMAE:
     def __init__(self, mask_ratio=0.6):
         self.mask_ratio = mask_ratio
 
-    def call(self, x):
+    def __call__(self, x):
         """
         Perform per-sample random masking by per-sample shuffling.
         Per-sample shuffling is done by argsort random noise.

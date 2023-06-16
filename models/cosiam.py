@@ -1,25 +1,29 @@
+from functools import partial
+
 import torch
 import torch.nn as nn
 from timm.models.layers import trunc_normal_
 
+from util.pos_embedding import PositionalEmbedding
 from .vision_transformer import VisionTransformer
 
 
-class VisionTransformerForCOSiam(VisionTransformer):
-    def __init__(self, num_projection_layers, last_projection_bn, **kwargs):
+class VisionTransformerEncoder(VisionTransformer):
+    def __init__(self, num_projection_layers=None, **kwargs):
         super().__init__(**kwargs)
 
         assert self.num_classes == 0
 
+        if num_projection_layers is not None:
+            self.projector = self._build_mlp()
+
         self.mask_token = nn.Parameter(torch.zeros(1, 1, self.embed_dim))
-        self.num_projection_layers = num_projection_layers
-        self.last_projection_bn = last_projection_bn
         self._trunc_normal_(self.mask_token, std=.02)
 
     def _trunc_normal_(self, tensor, mean=0., std=1.):
         trunc_normal_(tensor, mean=mean, std=std, a=-std, b=std)
 
-    def _build_mlp(self):
+    def _build_mlp(self, last_projection_bn=True):
         mlp_hidden_dim = int(self.embed_dim * self.mlp_ratio)
 
         mlp = []
@@ -32,20 +36,22 @@ class VisionTransformerForCOSiam(VisionTransformer):
             if l < self.num_projection_layers - 1:
                 mlp.append(nn.BatchNorm1d(dim2))
                 mlp.append(nn.ReLU(inplace=True))
-            elif self.last_projection_bn:
+            elif last_projection_bn:
                 # follow SimCLR's design: https://github.com/google-research/simclr/blob/master/model_util.py#L157
                 # for simplicity, we further removed gamma in BN
                 mlp.append(nn.BatchNorm1d(dim2, affine=False))
 
         return nn.Sequential(*mlp)
 
-    def forward(self, x):
+    def forward(self, x, mask=None):
         x = self.patch_embed(x)
 
         B, L, _ = x.shape
 
-        cls_tokens = self.cls_token.expand(B, -1, -1)  # stole cls_tokens impl from Phil Wang, thanks
-        x = torch.cat((cls_tokens, x), dim=1)
+        if mask is not None:
+            mask_token = self.mask_token.expand(B, L, -1)
+            w = mask.flatten(1).unsqueeze(-1).type_as(mask_token)
+            x = x * (1 - w) + mask_token * w
 
         if self.pos_embed is not None:
             x = x + self.pos_embed
@@ -56,7 +62,45 @@ class VisionTransformerForCOSiam(VisionTransformer):
             x = blk(x, rel_pos_bias=rel_pos_bias)
         x = self.norm(x)
 
-        x = x[:, 1:]
+        if self.projector:
+            x = self.projector(x)
+
+        B, L, C = x.shape
+        H = W = int(L ** 0.5)
+        x = x.permute(0, 2, 1).reshape(B, C, H, W)
+        return x
+
+
+class VisionTransformerDecoder(VisionTransformer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        assert self.num_classes == 0
+
+        self.pos_embed = PositionalEmbedding(self.base_encoder.embed_dim)
+
+        self.mask_token = nn.Parameter(torch.zeros(1, 1, self.embed_dim))
+        self._trunc_normal_(self.mask_token, std=.02)
+
+    def _trunc_normal_(self, tensor, mean=0., std=1.):
+        trunc_normal_(tensor, mean=mean, std=std, a=-std, b=std)
+
+    def forward(self, x, mask):
+        B, L, _ = x.shape
+
+        mask_token = self.mask_token.expand(B, L, -1)
+        w = mask.flatten(1).unsqueeze(-1).type_as(mask_token)
+        x = x * (1 - w) + mask_token * w
+
+        if self.pos_embed is not None:
+            x = x + self.pos_embed
+        x = self.pos_drop(x)
+
+        rel_pos_bias = None
+        for blk in self.blocks:
+            x = blk(x, rel_pos_bias=rel_pos_bias)
+        x = self.norm(x)
+
         B, L, C = x.shape
         H = W = int(L ** 0.5)
         x = x.permute(0, 2, 1).reshape(B, C, H, W)
@@ -79,7 +123,33 @@ class COSiam(nn.Module):
                                     self.momentum_encoder.parameters()):
             param_m.data = param_m.data * m + param_b.data * (1. - m)
 
-    def forward(self, x1, x2, m, mask):
+    def loss_unigrad(self, z1, z2, z1m, z2m):
+        # calculate correlation matrix
+        tmp_F = (torch.mm(z1m.t(), z1m) + torch.mm(z2m.t(), z2m)) / (2 * z1m.shape[0])
+        torch.distributed.all_reduce(tmp_F)
+        tmp_F = tmp_F / torch.distributed.get_world_size()
+        if self.F is None:
+            self.F = tmp_F.detach()
+        else:
+            self.F = self.cfg.rho * self.F + (1 - self.cfg.rho) * tmp_F.detach()
+
+        # compute grad & loss
+        grad1 = -z2m + self.cfg.lambd * torch.mm(z1, self.F)
+        loss1 = (grad1.detach() * z1).sum(-1).mean()
+
+        grad2 = -z1m + self.cfg.lambd * torch.mm(z2, self.F)
+        loss2 = (grad2.detach() * z2).sum(-1).mean()
+
+        loss = 0.5 * (loss1 + loss2)
+
+        # compute positive similarity, just for observation
+        pos_sim1 = torch.einsum('nc,nc->n', [z1, z2m]).mean().detach()
+        pos_sim2 = torch.einsum('nc,nc->n', [z2, z1m]).mean().detach()
+        pos_sim = 0.5 * (pos_sim1 + pos_sim2)
+
+        return loss, pos_sim
+
+    def forward_features(self, x1, x2, random_crop, m, mask):
         """
          Input:
             x1: first views of images
@@ -89,16 +159,19 @@ class COSiam(nn.Module):
             loss
         """
         assert mask is not None
-        B, L, _ = x1.shape
-
-        mask_token = self.mask_token.expand(B, L, -1)
-        w = mask.flatten(1).unsqueeze(-1).type_as(mask_token)
-        x1 = x1 * (1 - w) + mask_token * w
 
         y_a = self.base_encoder(x1)
         with torch.no_grad():  # no gradient
             self._update_momentum_encoder(m)    # update the momentum encoder
             x_b = self.momentum_encoder(x2)
+
+        B, C, H, W = y_a.shape
+        assert H == W
+        p_a, p_b = self.pos_embed(random_crop, H, cls_token=False)
+
+
+    def forwards(self, x1, x2, m, mask):
+        pass
 
     @torch.jit.ignore
     def no_weight_decay(self):
@@ -117,3 +190,49 @@ class COSiam(nn.Module):
             no_weight_decay.update({f'{field_name}.' + i for i in field_value.no_weight_decay()}) \
                 if hasattr(self.field_value, 'no_weight_decay_keywords') else {}
         return no_weight_decay
+
+
+def build_cosiam(config):
+    model_type = config.MODEL.TYPE
+    if model_type == 'vit':
+        encoder = VisionTransformerEncoder(
+            img_size=config.DATA.IMG_SIZE,
+            patch_size=config.MODEL.ENCODER.VIT.PATCH_SIZE,
+            embed_dim=config.MODEL.ENCODER.VIT.EMBED_DIM,
+            depth=config.MODEL.ENCODER.VIT.DEPTH,
+            num_heads=config.MODEL.ENCODER.VIT.NUM_HEADS,
+            mlp_ratio=config.MODEL.ENCODER.VIT.MLP_RATIO,
+            qkv_bias=config.MODEL.ENCODER.VIT.QKV_BIAS,
+            norm_layer=partial(nn.LayerNorm, eps=1e-6),
+            init_values=config.MODEL.VIT.INIT_VALUES,
+            use_abs_pos_emb=config.MODEL.ENCODER.VIT.USE_APE,
+            use_rel_pos_bias=config.MODEL.ENCODER.VIT.USE_RPB,
+            use_shared_rel_pos_bias=config.MODEL.ENCODER.VIT.USE_SHARED_RPB,
+            use_mean_pooling=config.MODEL.ENCODER.VIT.USE_MEAN_POOLING,
+            num_projection_layers=config.MODEL.ENCODER.VIT.NUM_PROJECTION_LAYERS,
+            is_encoder=True)
+
+        decoder = VisionTransformerEncoder(
+            img_size=config.DATA.IMG_SIZE,
+            patch_size=config.MODEL.DECODER.VIT.PATCH_SIZE,
+            in_chans=config.MODEL.DECODER.VIT.IN_CHANS,
+            embed_dim=config.MODEL.DECODER.VIT.EMBED_DIM,
+            depth=config.MODEL.DECODER.VIT.DEPTH,
+            num_heads=config.MODEL.DECODER.VIT.NUM_HEADS,
+            mlp_ratio=config.MODEL.DECODER.VIT.MLP_RATIO,
+            qkv_bias=config.MODEL.DECODER.VIT.QKV_BIAS,
+            drop_rate=config.MODEL.DROP_RATE,
+            drop_path_rate=config.MODEL.DROP_PATH_RATE,
+            norm_layer=partial(nn.LayerNorm, eps=1e-6),
+            init_values=config.MODEL.VIT.INIT_VALUES,
+            use_abs_pos_emb=config.MODEL.DECODER.VIT.USE_APE,
+            use_rel_pos_bias=config.MODEL.DECODER.VIT.USE_RPB,
+            use_shared_rel_pos_bias=config.MODEL.DECODER.VIT.USE_SHARED_RPB,
+            use_mean_pooling=config.MODEL.DECODER.VIT.USE_MEAN_POOLING,
+            is_encoder=False)
+    else:
+        raise NotImplementedError(f"Unknown pre-train model: {model_type}")
+
+    model = COSiam(encoder=encoder, decoder=decoder)
+
+    return model

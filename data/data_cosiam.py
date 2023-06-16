@@ -49,7 +49,7 @@ class COSiamMIMTransform:
             'x0': self.to_tensor(img),
             'x1': x1,
             'x2': x2,
-            'pos': pos,
+            'random_crop': pos,
             'mask': mask
         }
 
@@ -60,7 +60,7 @@ def collate_fn(batch):
     collated = {}
 
     for key in keys:
-        if key == 'pos':
+        if key == 'random_crop':
             crops = [batch[i][0][key] for i in range(batch_num)]
             crops = [item for tup in crops for item in tup]
             crops = default_collate(crops).view(batch_num, -1)

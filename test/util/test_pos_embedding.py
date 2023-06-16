@@ -77,7 +77,7 @@ class TestPositionalEmbedding(unittest.TestCase):
         sequence_mae = get_2d_sincos_pos_embed(embed_dim, grid_size)
         sequence, _ = pos_enc(random_crop, grid_size)
 
-        self.assertTrue(torch.allclose(torch.tensor(sequence_mae), sequence[0]))
+        self.assertTrue(torch.allclose(torch.tensor(sequence_mae, dtype=torch.float32), sequence[0]))
 
     def test_get_2d_sincos_pos_embed_from_grid(self):
         embed_dim = 4
@@ -128,6 +128,19 @@ class TestPositionalEmbedding(unittest.TestCase):
 
         self.assertEqual(p1.shape, (3, grid_size ** 2, embed_dim))
         self.assertEqual(p2.shape, (3, grid_size ** 2, embed_dim))
+
+    def test_forward_with_cls(self):
+        random_crop = torch.tensor([[0, 0, 16, 16, 5, 5, 11, 11],
+                                    [0, 0, 16, 16, 6, 7, 10, 9],
+                                    [0, 0, 16, 16, 5, 5, 9, 9]], dtype=torch.float32)
+        grid_size = 16
+        embed_dim = 128
+
+        pos_enc = PositionalEmbedding(embed_dim)
+        p1, p2 = pos_enc(random_crop, grid_size, cls_token=True)
+
+        self.assertEqual(p1.shape, (3, grid_size ** 2 + 1, embed_dim))
+        self.assertEqual(p2.shape, (3, grid_size ** 2 + 1, embed_dim))
 
 
 if __name__ == '__main__':

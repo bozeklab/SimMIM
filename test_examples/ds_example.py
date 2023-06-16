@@ -13,6 +13,7 @@ import torchvision.transforms as T
 from torchvision.ops import masks_to_boxes
 
 from data.data_cosiam import COSiamMIMTransform, collate_fn
+from data.mask_generator_mae import MaskGeneratorMAE
 from logger import create_logger
 
 _C = CN()
@@ -206,17 +207,26 @@ if __name__ == '__main__':
 
     images = []
 
+    mask_mae = MaskGeneratorMAE(mask_ratio=0.6)
+
     for idx, sample in enumerate(dataloader):
         x0 = sample['x0']
         x1 = sample['x1']
         x2 = sample['x2']
-        pos = sample['pos']
+        pos = sample['random_crop']
 
         mask = sample['mask']
 
         img0 = x0.permute(0, 2, 3, 1)
         img1 = x1.permute(0, 2, 3, 1)
         img2 = x2.permute(0, 2, 3, 1)
+
+        patch_size = config.MODEL.VIT.PATCH_SIZE
+        N, H, W, C = img0.shape
+        fake_embedding = torch.rand((N, (H // patch_size) * (W // patch_size), C))
+
+        #x_masked, mask, ids_restore = mask_mae(fake_embedding)
+        #mask = mask.view(N, H // patch_size, W // patch_size)
 
         img0 = tensor_batch_to_list(img0)
         img1 = tensor_batch_to_list(img1)

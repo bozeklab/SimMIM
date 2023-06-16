@@ -110,7 +110,7 @@ class PositionalEmbedding(nn.Module):
 
         return torch.tensor(grid1), torch.tensor(grid2)
 
-    def forward(self, random_crop, grid_size) -> Tuple[Tensor, Tensor]:
+    def forward(self, random_crop, grid_size, cls_token=False) -> Tuple[Tensor, Tensor]:
         grid1, grid2 = self.calculate_grid(random_crop, grid_size)
 
         pos_embed1 = PositionalEmbedding.get_2d_sincos_pos_embed_from_grid(self.embed_dim, grid1)
@@ -126,6 +126,10 @@ class PositionalEmbedding(nn.Module):
         scale_variation = scale_variation.repeat(1, pos_embed2.shape[1], 1)
 
         pos_embed2 = self.dim_fix(torch.concat([pos_embed2, scale_variation], dim=-1))
+
+        if cls_token:
+            pos_embed1 = torch.concat([torch.zeros([pos_embed1.shape[0], 1, self.embed_dim]), pos_embed1], dim=1)
+            pos_embed2 = torch.concat([torch.zeros([pos_embed2.shape[0], 1, self.embed_dim]), pos_embed2], dim=1)
 
         return pos_embed1, pos_embed2
 
