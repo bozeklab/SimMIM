@@ -14,8 +14,10 @@ class VisionTransformerEncoder(VisionTransformer):
 
         assert self.num_classes == 0
 
+        mlp_ratio = kwargs['mlp_ratio']
+
         if num_projection_layers is not None:
-            self.projector = self._build_mlp()
+            self.projector = self._build_mlp(mlp_ratio=mlp_ratio)
 
         self.mask_token = nn.Parameter(torch.zeros(1, 1, self.embed_dim))
         self._trunc_normal_(self.mask_token, std=.02)
@@ -23,8 +25,8 @@ class VisionTransformerEncoder(VisionTransformer):
     def _trunc_normal_(self, tensor, mean=0., std=1.):
         trunc_normal_(tensor, mean=mean, std=std, a=-std, b=std)
 
-    def _build_mlp(self, last_projection_bn=True):
-        mlp_hidden_dim = int(self.embed_dim * self.mlp_ratio)
+    def _build_mlp(self, mlp_ratio, last_projection_bn=True):
+        mlp_hidden_dim = int(self.embed_dim * mlp_ratio)
 
         mlp = []
         for l in range(self.num_projection_layers):
