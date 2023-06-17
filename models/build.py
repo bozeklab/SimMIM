@@ -15,16 +15,14 @@ def build_model(config, is_pretrain=True):
     if is_pretrain:
         if 'cosiam' in config.MODEL.NAME:
             model = build_cosiam(config)
-        else:
-            models= build_simmim(config)
+        elif 'simmim' in config.MODEL.NAME:
+            model = build_simmim(config)
     else:
         model_type = config.MODEL.TYPE
         if model_type == 'swin':
             model = build_swin(config)
         elif model_type == 'vit':
             model = build_vit(config)
-        elif model_type == 'cosiam':
-            model = build_cosiam(config)
         else:
             raise NotImplementedError(f"Unknown fine-tune model: {model_type}")
 
