@@ -211,6 +211,7 @@ def build_cosiam(config):
             img_size=config.DATA.IMG_SIZE,
             patch_size=config.MODEL.ENCODER.VIT.PATCH_SIZE,
             embed_dim=config.MODEL.ENCODER.VIT.EMBED_DIM,
+            num_classes=0,
             depth=config.MODEL.ENCODER.VIT.DEPTH,
             num_heads=config.MODEL.ENCODER.VIT.NUM_HEADS,
             mlp_ratio=config.MODEL.ENCODER.VIT.MLP_RATIO,
@@ -226,7 +227,7 @@ def build_cosiam(config):
         decoder = VisionTransformerDecoder(
             img_size=config.DATA.IMG_SIZE,
             patch_size=config.MODEL.DECODER.VIT.PATCH_SIZE,
-            in_chans=config.MODEL.DECODER.VIT.IN_CHANS,
+            num_classes=0,
             embed_dim=config.MODEL.DECODER.VIT.EMBED_DIM,
             depth=config.MODEL.DECODER.VIT.DEPTH,
             num_heads=config.MODEL.DECODER.VIT.NUM_HEADS,
