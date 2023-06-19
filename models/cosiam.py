@@ -79,7 +79,7 @@ class VisionTransformerDecoder(VisionTransformer):
 
         assert self.num_classes == 0
 
-        self.pos_embed = PositionalEmbedding(self.base_encoder.embed_dim)
+        self.pos_embed = PositionalEmbedding(self.embed_dim)
 
         self.mask_token = nn.Parameter(torch.zeros(1, 1, self.embed_dim))
         self._trunc_normal_(self.mask_token, std=.02)
