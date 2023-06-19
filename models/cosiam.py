@@ -31,7 +31,7 @@ class VisionTransformerEncoder(VisionTransformer):
         mlp = []
         for l in range(num_projection_layers):
             dim1 = self.embed_dim if l == 0 else mlp_hidden_dim
-            dim2 = self.embed_dim if l == self.num_projection_layers - 1 else mlp_hidden_dim
+            dim2 = self.embed_dim if l == num_projection_layers - 1 else mlp_hidden_dim
 
             mlp.append(nn.Linear(dim1, dim2, bias=False))
 
