@@ -35,7 +35,7 @@ class VisionTransformerEncoder(VisionTransformer):
 
             mlp.append(nn.Linear(dim1, dim2, bias=False))
 
-            if l < self.num_projection_layers - 1:
+            if l < num_projection_layers - 1:
                 mlp.append(nn.BatchNorm1d(dim2))
                 mlp.append(nn.ReLU(inplace=True))
             elif last_projection_bn:
