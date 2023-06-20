@@ -186,14 +186,13 @@ class COSiam(nn.Module):
 
         loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
 
-
     @torch.jit.ignore
     def no_weight_decay(self):
         no_weight_decay = set()
         for field_name in ['base_encoder', 'momentum_encoder', 'decoder']:
             field_value = getattr(self, field_name)
             no_weight_decay.update({f'{field_name}.' + i for i in field_value.no_weight_decay()}) \
-                if hasattr(self.field_value, 'no_weight_decay') else {}
+                if hasattr(field_value, 'no_weight_decay') else {}
         return no_weight_decay
 
     @torch.jit.ignore
@@ -202,7 +201,7 @@ class COSiam(nn.Module):
         for field_name in ['base_encoder', 'momentum_encoder', 'decoder']:
             field_value = getattr(self, field_name)
             no_weight_decay.update({f'{field_name}.' + i for i in field_value.no_weight_decay()}) \
-                if hasattr(self.field_value, 'no_weight_decay_keywords') else {}
+                if hasattr(field_value, 'no_weight_decay_keywords') else {}
         return no_weight_decay
 
 
