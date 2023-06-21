@@ -67,13 +67,12 @@ class VisionTransformerEncoder(VisionTransformer):
             x = blk(x, rel_pos_bias=rel_pos_bias)
         x = self.norm(x)
 
-        print('!!!')
-        print(x.shape)
-
-        if self.projector:
-            x = self.projector(x)
-
         x = x[:, 1:]
+        if self.projector:
+            x = x.flatten(0,1)
+            x = self.projector(x)
+            x = x.reshape(B, L, -1)
+
         B, L, C = x.shape
         H = W = int(L ** 0.5)
         x = x.reshape(B, H, W, C)
