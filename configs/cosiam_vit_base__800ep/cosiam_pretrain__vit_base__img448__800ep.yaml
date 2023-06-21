@@ -36,4 +36,4 @@ TRAIN:
     MULTISTEPS: [700,]
 PRINT_FREQ: 100
 SAVE_FREQ: 5
-TAG: cosiam_pretrain__vit_base__img512__800ep
+TAG: cosiam_pretrain__vit_base__img448__800ep

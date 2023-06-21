@@ -67,6 +67,9 @@ class VisionTransformerEncoder(VisionTransformer):
             x = blk(x, rel_pos_bias=rel_pos_bias)
         x = self.norm(x)
 
+        print('!!!')
+        print(x.shape)
+
         if self.projector:
             x = self.projector(x)
 
