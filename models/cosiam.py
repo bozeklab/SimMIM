@@ -124,7 +124,7 @@ class COSiam(nn.Module):
         super().__init__()
 
         self.base_encoder = encoder
-        self.momentum_encoder = copy.deepcopy(self.encoder)
+        self.momentum_encoder = copy.deepcopy(self.base_encoder)
         self.decoder = decoder
 
     @torch.no_grad()
