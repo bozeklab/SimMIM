@@ -20,18 +20,17 @@ from timm.utils import AverageMeter
 from config import get_config
 from data.data_cosiam import build_loader_cosiam
 from models import build_model
-from data import build_loader
 from lr_scheduler import build_scheduler
 from optimizer import build_optimizer
 from logger import create_logger
 from utils import load_checkpoint, save_checkpoint, get_grad_norm, auto_resume_helper
 
-try:
-    # noinspection PyUnresolvedReferences
-    from apex import amp
-except ImportError:
-    amp = None
-
+#try:
+#    # noinspection PyUnresolvedReferences
+#    from apex import amp
+#except ImportError:
+#    amp = None
+from torch.cuda import amp
 
 def parse_option():
     parser = argparse.ArgumentParser('SimMIM pre-training script', add_help=False)
