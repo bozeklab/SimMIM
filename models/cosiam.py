@@ -67,12 +67,12 @@ class VisionTransformerEncoder(VisionTransformer):
             x = blk(x, rel_pos_bias=rel_pos_bias)
         x = self.norm(x)
 
-        x = x[:, 1:]
         if self.projector:
-            x = x.flatten(0,1)
+            x = x.flatten(0, 1)
             x = self.projector(x)
             x = x.reshape(B, L, -1)
 
+        x = x[:, 1:]
         B, L, C = x.shape
         H = W = int(L ** 0.5)
         x = x.reshape(B, H, W, C)
@@ -182,7 +182,7 @@ class COSiam(nn.Module):
     def forward(self, x1, x2, random_crop, m, mask):
         z1, z1m = self.forward_features(x1, x2, random_crop, m, mask)
         random_crop = torch.concat([random_crop[:, 4:], random_crop[:, :4]], dim=1)
-        z2, z2m = self.forward_features(x2, x2, random_crop, m, mask)
+        z2, z2m = self.forward_features(x2, x1, random_crop, m, mask)
 
         B, L, C = z1.shape
         z1 = z1.view((B * L, C))
