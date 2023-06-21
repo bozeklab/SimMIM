@@ -70,7 +70,7 @@ class VisionTransformerEncoder(VisionTransformer):
         if self.projector:
             x = x.flatten(0, 1)
             x = self.projector(x)
-            x = x.reshape(B, L, -1)
+            x = x.reshape(B, L + 1, -1)
 
         x = x[:, 1:]
         B, L, C = x.shape
