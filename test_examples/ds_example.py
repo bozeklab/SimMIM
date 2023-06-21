@@ -32,7 +32,7 @@ _C.DATA.DATA_PATH = '/Users/piotrwojcik/sample_he/'
 # Dataset name
 _C.DATA.DATASET = 'imagenet'
 # Input image size
-_C.DATA.IMG_SIZE = 512
+_C.DATA.IMG_SIZE = 448
 # Interpolation to resize image (random, bilinear, bicubic)
 _C.DATA.INTERPOLATION = 'bicubic'
 # [SimMIM] Mask patch size for MaskGenerator

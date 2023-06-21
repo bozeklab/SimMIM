@@ -1,3 +1,4 @@
+import PIL
 import torch.distributed as dist
 
 import torch
@@ -13,9 +14,11 @@ from data.transforms import GaussianBlur, Solarization, RandomResizedCrop
 
 class COSiamMIMTransform:
     def __init__(self, config):
-        self.to_tensor = T.ToTensor()
+        self.base_image = T.Compose([T.Resize(size=config.DATA.IMG_SIZE, interpolation=PIL.Image.BILINEAR),
+                                     T.ToTensor()])
 
         self.transform_img = T.Compose([
+            T.Resize(size=config.DATA.IMG_SIZE, interpolation=PIL.Image.BILINEAR),
             T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
             T.RandomGrayscale(p=0.2),
             GaussianBlur(0.1),
@@ -50,7 +53,7 @@ class COSiamMIMTransform:
         mask = self.mask_generator()
 
         return {
-            'x0': self.to_tensor(img),
+            'x0': self.base_image(img),
             'x1': x1,
             'x2': x2,
             'random_crop': pos,
