@@ -1,6 +1,7 @@
 from functools import partial
 
 import torch
+import copy
 import torch.nn as nn
 from timm.models.layers import trunc_normal_
 
@@ -123,7 +124,7 @@ class COSiam(nn.Module):
         super().__init__()
 
         self.base_encoder = encoder
-        self.momentum_encoder = encoder
+        self.momentum_encoder = copy.deepcopy(self.encoder)
         self.decoder = decoder
 
     @torch.no_grad()
