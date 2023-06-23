@@ -1,4 +1,3 @@
-import numpy as np
 import torch.nn as nn
 
 # --------------------------------------------------------
@@ -10,6 +9,7 @@ import torch.nn as nn
 import torch
 from typing import Tuple
 from torch import Tensor
+import numpy as np
 
 
 class PositionalEmbedding(nn.Module):
@@ -24,7 +24,7 @@ class PositionalEmbedding(nn.Module):
         # i1, j1, h1, w1, i2, j2, h2, w2
         batch_size = random_crop.shape[0]
 
-        grid = np.expand_dims(grid, axis=0)
+        grid = grid.unsqueeze(dim=0)
 
         # h2 / h1
         h = random_crop[:, 6] / random_crop[:, 2]
@@ -40,10 +40,10 @@ class PositionalEmbedding(nn.Module):
         b_h = b_h.reshape(batch_size, 1, 1, 1)
         b_w = b_w.reshape(batch_size, 1, 1, 1)
 
-        rp_h = np.multiply(grid[:, 0], h) + b_h
-        rp_w = np.multiply(grid[:, 1], w) + b_w
+        rp_h = torch.multiply(grid[:, 0], h) + b_h
+        rp_w = torch.multiply(grid[:, 1], w) + b_w
 
-        rp = np.concatenate([rp_h, rp_w], axis=1)
+        rp = torch.cat([rp_h, rp_w], dim=1)
         return rp
 
     @staticmethod
@@ -56,8 +56,8 @@ class PositionalEmbedding(nn.Module):
         h = h.reshape(batch_size, 1, 1, 1)
         w = w.reshape(batch_size, 1, 1, 1)
 
-        rp = np.concatenate([h, w], axis=1)
-        rp = 10. * np.log(rp)
+        rp = torch.cat([h, w], dim=1)
+        rp = 10. * torch.log(rp)
         return rp
 
     @staticmethod
@@ -69,8 +69,8 @@ class PositionalEmbedding(nn.Module):
         emb_h = PositionalEmbedding.get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[:, 0])  # (N, H*W, D/2)
         emb_w = PositionalEmbedding.get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[:, 1])  # (N, H*W, D/2)
 
-        emb = np.concatenate([emb_h, emb_w], axis=1)    # (N, H*W, D)
-        emb = np.reshape(emb, (batch_size, h*w, embed_dim))
+        emb = torch.cat([emb_h, emb_w], dim=1)    # (N, H*W, D)
+        emb = emb.reshape((batch_size, h*w, embed_dim))
         return emb
 
     @staticmethod
@@ -81,17 +81,17 @@ class PositionalEmbedding(nn.Module):
         out: (M, D)
         """
         assert embed_dim % 2 == 0
-        omega = np.arange(embed_dim // 2, dtype=float)
+        omega = torch.arange(embed_dim // 2, dtype=float)
         omega /= embed_dim / 2.
         omega = 1. / 10000**omega   # (D/2,)
 
         pos = pos.reshape(-1)   # (M,)
-        out = np.einsum('m,d->md', pos, omega)  # (M, D/2), outer product
+        out = torch.einsum('m,d->md', pos, omega)  # (M, D/2), outer product
 
-        emb_sin = np.sin(out)   # (M, D/2)
-        emb_cos = np.cos(out)   # (M, D/2)
+        emb_sin = torch.sin(out)   # (M, D/2)
+        emb_cos = torch.cos(out)   # (M, D/2)
 
-        emb = np.concatenate([emb_sin, emb_cos], axis=1)  # (M, D)
+        emb = torch.cat([emb_sin, emb_cos], dim=1)  # (M, D)
         return emb
 
     def calculate_grid(self, random_crop, grid_size) -> Tuple[Tensor, Tensor]:
@@ -105,10 +105,11 @@ class PositionalEmbedding(nn.Module):
         grid1 = grid.reshape([2, grid_size, grid_size])
         grid2 = grid1.copy()
 
-        grid1 = np.repeat(grid1[np.newaxis, :], batch_size, axis=0)
-        grid2 = PositionalEmbedding.encode_relative_position(grid2, random_crop, grid_size)
+        grid1 = torch.tensor(np.repeat(grid1[np.newaxis, :], batch_size, axis=0), dtype=torch.float32)
+        grid2 = PositionalEmbedding.encode_relative_position(torch.tensor(grid2, dtype=torch.float32),
+                                                             random_crop, grid_size)
 
-        return torch.tensor(grid1), torch.tensor(grid2)
+        return grid1, grid2
 
     def forward(self, random_crop, grid_size, cls_token=False) -> Tuple[Tensor, Tensor]:
         grid1, grid2 = self.calculate_grid(random_crop, grid_size)
@@ -116,12 +117,12 @@ class PositionalEmbedding(nn.Module):
         pos_embed1 = PositionalEmbedding.get_2d_sincos_pos_embed_from_grid(self.embed_dim, grid1)
         pos_embed2 = PositionalEmbedding.get_2d_sincos_pos_embed_from_grid(self.embed_dim, grid2)
 
-        pos_embed1 = torch.tensor(pos_embed1, dtype=torch.float32)
-        pos_embed2 = torch.tensor(pos_embed2, dtype=torch.float32)
+        pos_embed1 = pos_embed1.float()
+        pos_embed2 = pos_embed2.float()
 
         scale_variation = self.encode_scale_variation(random_crop)
         scale_variation = PositionalEmbedding.get_2d_sincos_pos_embed_from_grid(self.embed_dim, scale_variation)
-        scale_variation = torch.tensor(scale_variation, dtype=torch.float32)
+        scale_variation = scale_variation.float()
 
         scale_variation = scale_variation.repeat(1, pos_embed2.shape[1], 1)
 

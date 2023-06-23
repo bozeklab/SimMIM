@@ -1,6 +1,5 @@
 import unittest
 import torch
-import numpy as np
 
 from test_examples.mae_pos_encoding import get_2d_sincos_pos_embed
 from util.pos_embedding import PositionalEmbedding
@@ -81,7 +80,7 @@ class TestPositionalEmbedding(unittest.TestCase):
 
     def test_get_2d_sincos_pos_embed_from_grid(self):
         embed_dim = 4
-        grid = np.array([[[[0, 1], [2, 3]], [[4, 5], [6, 7]]]])
+        grid = torch.tensor([[[[0, 1], [2, 3]], [[4, 5], [6, 7]]]])
 
         batch_size, _, h, w = grid.shape
 
@@ -93,7 +92,7 @@ class TestPositionalEmbedding(unittest.TestCase):
 
     def test_get_1d_sincos_pos_embed_from_grid(self):
         embed_dim = 4
-        random_crop = np.array([1, 2, 3, 4])
+        random_crop = torch.tensor([1, 2, 3, 4])
 
         pos_enc = PositionalEmbedding(embed_dim)
         pos_embed = pos_enc.get_1d_sincos_pos_embed_from_grid(embed_dim, random_crop)
