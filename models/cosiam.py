@@ -162,7 +162,7 @@ class COSiam(nn.Module):
 
         return loss, pos_sim
 
-    def forward_features(self, x1, x2, random_crop, m, mask):
+    def forward_features(self, x1, x2, random_crop, mm, mask):
         """
          Input:
             x1: first views of images
@@ -175,19 +175,19 @@ class COSiam(nn.Module):
 
         y_a = self.base_encoder(x1)
         with torch.no_grad():  # no gradient
-            self._update_momentum_encoder(m)    # update the momentum encoder
+            self._update_momentum_encoder(mm)    # update the momentum encoder
             x_b = self.momentum_encoder(x2)
 
         y_b = self.decoder(y_a, random_crop, mask)
 
         return y_b, x_b
 
-    def forward(self, x1, x2, random_crop, m, mask):
-        z1, z1m = self.forward_features(x1, x2, random_crop, m, mask)
+    def forward(self, x1, x2, random_crop, mm, mask):
+        z1, z1m = self.forward_features(x1, x2, random_crop, mm, mask)
         random_crop = torch.concat([random_crop[:, 4:], random_crop[:, :4]], dim=1)
-        xx2 = x2.clone()
-        xx1 = x1.clone()
-        z2, z2m = self.forward_features(xx2, xx1, random_crop, m, mask)
+        print(x1.shape)
+        print(x2.shape)
+        z2, z2m = self.forward_features(x2, x1, random_crop, mm, mask)
 
         B, L, C = z1.shape
         z1 = z1.view((B * L, C))
