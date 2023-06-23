@@ -104,13 +104,6 @@ class VisionTransformerDecoder(VisionTransformer):
         x = x * (1 - w) + mask_token * w
 
         p_a, p_b = self.pos_embed(random_crop, H)
-        print('!!!')
-        print(p_a.shape)
-        p_a = p_a.flatten(1)
-        p_b = p_b.flatten(1)
-        print(p_b.shape)
-        print(w.shape)
-        print(x.shape)
 
         p = p_a * (1 - w) + p_b * w
         x = x + p
