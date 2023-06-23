@@ -106,6 +106,10 @@ class VisionTransformerDecoder(VisionTransformer):
         p_a, p_b = self.pos_embed(random_crop, H)
         p_a = p_a.flatten(1)
         p_b = p_b.flatten(1)
+        print('!!!')
+        print(p_a.shape)
+        print(p_b.shape)
+
         p = p_a * (1 - w) + p_b * w
         x = x + p
         x = self.pos_drop(x)
