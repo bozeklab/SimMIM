@@ -23,6 +23,7 @@ class PositionalEmbedding(nn.Module):
     def encode_relative_position(grid, random_crop, grid_size):
         # i1, j1, h1, w1, i2, j2, h2, w2
         batch_size = random_crop.shape[0]
+        grid = grid.to(random_crop.device)
 
         grid = grid.unsqueeze(dim=0)
 
