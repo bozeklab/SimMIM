@@ -105,6 +105,9 @@ class VisionTransformerDecoder(VisionTransformer):
 
         p_a, p_b = self.pos_embed(random_crop, H)
 
+        p_a = p_a.cuda()
+        p_b = p_b.cuda()
+
         p = p_a * (1 - w) + p_b * w
         x = x + p
         x = self.pos_drop(x)
