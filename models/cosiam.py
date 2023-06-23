@@ -185,8 +185,6 @@ class COSiam(nn.Module):
     def forward(self, x1, x2, random_crop, mm, mask):
         z1, z1m = self.forward_features(x1, x2, random_crop, mm, mask)
         random_crop = torch.concat([random_crop[:, 4:], random_crop[:, :4]], dim=1)
-        print(x1.shape)
-        print(x2.shape)
         z2, z2m = self.forward_features(x2, x1, random_crop, mm, mask)
 
         B, L, C = z1.shape
