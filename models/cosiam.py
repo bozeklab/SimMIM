@@ -109,6 +109,7 @@ class VisionTransformerDecoder(VisionTransformer):
         print('!!!')
         print(p_a.shape)
         print(p_b.shape)
+        print(x.shape)
 
         p = p_a * (1 - w) + p_b * w
         x = x + p
