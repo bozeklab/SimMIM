@@ -82,7 +82,7 @@ class PositionalEmbedding(nn.Module):
         out: (M, D)
         """
         assert embed_dim % 2 == 0
-        omega = torch.arange(embed_dim // 2, dtype=float)
+        omega = torch.arange(embed_dim // 2, dtype=float).to(pos.device)
         omega /= embed_dim / 2.
         omega = 1. / 10000**omega   # (D/2,)
 
