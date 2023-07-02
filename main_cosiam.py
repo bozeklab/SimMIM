@@ -15,7 +15,7 @@ import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
-from timm.utils import AverageMeter
+from timm.utils import AverageMeter, NativeScaler
 
 from config import get_config
 from data.data_cosiam import build_loader_cosiam
@@ -48,8 +48,6 @@ def parse_option():
     parser.add_argument('--accumulation-steps', type=int, help="gradient accumulation steps")
     parser.add_argument('--use-checkpoint', action='store_true',
                         help="whether to use gradient checkpointing to save memory")
-    parser.add_argument('--amp-opt-level', type=str, default='O1', choices=['O0', 'O1', 'O2'],
-                        help='mixed precision opt level, if O0, no amp is used')
     parser.add_argument('--output', default='output', type=str, metavar='PATH',
                         help='root of output folder, the full path is <output>/<model_name>/<tag> (default: output)')
     parser.add_argument('--tag', help='tag of experiment')
@@ -73,8 +71,6 @@ def main(config):
     logger.info(str(model))
 
     optimizer = build_optimizer(config, model, logger, is_pretrain=True)
-    if config.AMP_OPT_LEVEL != "O0":
-        model, optimizer = amp.initialize(model, optimizer, opt_level=config.AMP_OPT_LEVEL)
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[config.LOCAL_RANK], broadcast_buffers=False)
     model_without_ddp = model.module
 
@@ -98,8 +94,9 @@ def main(config):
         else:
             logger.info(f'no checkpoint found in {config.OUTPUT}, ignoring auto resume')
 
+    loss_scaler = NativeScaler()
     if config.MODEL.RESUME:
-        load_checkpoint(config, model_without_ddp, optimizer, lr_scheduler, logger)
+        load_checkpoint(config, model_without_ddp, optimizer, loss_scaler, lr_scheduler, logger)
 
     logger.info("Start training")
     start_time = time.time()
@@ -115,7 +112,7 @@ def main(config):
     logger.info('Training time {}'.format(total_time_str))
 
 
-def train_one_epoch(config, model, data_loader, optimizer, epoch, lr_scheduler, m):
+def train_one_epoch(config, model, data_loader, optimizer, epoch, loss_scaler, lr_scheduler, m):
     model.train()
     optimizer.zero_grad()
 
@@ -126,7 +123,7 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, lr_scheduler, 
 
     start = time.time()
     end = time.time()
-    for idx, sample in enumerate(data_loader):
+    for data_iter_step, sample in enumerate(data_loader):
         x1 = sample['x1']
         x2 = sample['x2']
         random_crop = sample['random_crop']
@@ -137,44 +134,16 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, lr_scheduler, 
         random_crop = random_crop.cuda(non_blocking=True)
         mask = mask.cuda(non_blocking=True)
 
-        loss = model(x1, x2, random_crop, m, mask)
+        with torch.cuda.amp.autocast():
+            loss = model(x1, x2, random_crop, m, mask)
 
-        if config.TRAIN.ACCUMULATION_STEPS > 1:
-            loss = loss / config.TRAIN.ACCUMULATION_STEPS
-            if config.AMP_OPT_LEVEL != "O0":
-                with amp.scale_loss(loss, optimizer) as scaled_loss:
-                    scaled_loss.backward()
-                if config.TRAIN.CLIP_GRAD:
-                    grad_norm = torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), config.TRAIN.CLIP_GRAD)
-                else:
-                    grad_norm = get_grad_norm(amp.master_params(optimizer))
-            else:
-                loss.backward()
-                if config.TRAIN.CLIP_GRAD:
-                    grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config.TRAIN.CLIP_GRAD)
-                else:
-                    grad_norm = get_grad_norm(model.parameters())
-            if (idx + 1) % config.TRAIN.ACCUMULATION_STEPS == 0:
-                optimizer.step()
-                optimizer.zero_grad()
-                lr_scheduler.step_update(epoch * num_steps + idx)
-        else:
+        loss = loss / config.TRAIN.ACCUMULATION_STEPS
+        grad_norm = loss_scaler(loss, optimizer, parameters=model.parameters(),
+                                 update_grad=(data_iter_step + 1) % config.TRAIN.ACCUMULATION_STEPS == 0)
+        if (data_iter_step + 1) % config.TRAIN.ACCUMULATION_STEPS == 0:
             optimizer.zero_grad()
-            if config.AMP_OPT_LEVEL != "O0":
-                with amp.scale_loss(loss, optimizer) as scaled_loss:
-                    scaled_loss.backward()
-                if config.TRAIN.CLIP_GRAD:
-                    grad_norm = torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), config.TRAIN.CLIP_GRAD)
-                else:
-                    grad_norm = get_grad_norm(amp.master_params(optimizer))
-            else:
-                loss.backward()
-                if config.TRAIN.CLIP_GRAD:
-                    grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config.TRAIN.CLIP_GRAD)
-                else:
-                    grad_norm = get_grad_norm(model.parameters())
-            optimizer.step()
-            lr_scheduler.step_update(epoch * num_steps + idx)
+        if (data_iter_step + 1) % config.TRAIN.ACCUMULATION_STEPS == 0:
+            lr_scheduler.step_update(epoch * num_steps + data_iter_step)
 
         torch.cuda.synchronize()
 
@@ -183,12 +152,12 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, lr_scheduler, 
         batch_time.update(time.time() - end)
         end = time.time()
 
-        if idx % config.PRINT_FREQ == 0:
+        if data_iter_step % config.PRINT_FREQ == 0:
             lr = optimizer.param_groups[0]['lr']
             memory_used = torch.cuda.max_memory_allocated() / (1024.0 * 1024.0)
-            etas = batch_time.avg * (num_steps - idx)
+            etas = batch_time.avg * (num_steps - data_iter_step)
             logger.info(
-                f'Train: [{epoch}/{config.TRAIN.EPOCHS}][{idx}/{num_steps}]\t'
+                f'Train: [{epoch}/{config.TRAIN.EPOCHS}][{data_iter_step}/{num_steps}]\t'
                 f'eta {datetime.timedelta(seconds=int(etas))} lr {lr:.6f}\t'
                 f'time {batch_time.val:.4f} ({batch_time.avg:.4f})\t'
                 f'loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t'
