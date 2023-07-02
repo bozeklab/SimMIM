@@ -13,11 +13,6 @@ import numpy as np
 from torch import inf
 from scipy import interpolate
 
-try:
-    # noinspection PyUnresolvedReferences
-    from apex import amp
-except ImportError:
-    amp = None
 
 
 def load_checkpoint(config, model, optimizer, loss_scaler, lr_scheduler, logger):

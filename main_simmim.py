@@ -26,6 +26,7 @@ from optimizer import build_optimizer
 from logger import create_logger
 from utils import load_checkpoint, save_checkpoint, auto_resume_helper
 
+from utils import NativeScalerWithGradNormCount as NativeScaler
 
 
 def parse_option():

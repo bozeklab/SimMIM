@@ -23,7 +23,9 @@ from models import build_model
 from lr_scheduler import build_scheduler
 from optimizer import build_optimizer
 from logger import create_logger
-from utils import load_checkpoint, save_checkpoint, get_grad_norm, auto_resume_helper
+from utils import load_checkpoint, save_checkpoint, auto_resume_helper
+
+from utils import NativeScalerWithGradNormCount as NativeScaler
 
 try:
     # noinspection PyUnresolvedReferences
