@@ -159,9 +159,6 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, loss_scaler, l
 if __name__ == '__main__':
     _, config = parse_option()
 
-    if config.AMP_OPT_LEVEL != "O0":
-        assert amp is not None, "amp not installed!"
-
     if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
         rank = int(os.environ["RANK"])
         world_size = int(os.environ['WORLD_SIZE'])

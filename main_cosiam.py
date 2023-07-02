@@ -27,11 +27,6 @@ from utils import load_checkpoint, save_checkpoint, auto_resume_helper
 
 from utils import NativeScalerWithGradNormCount as NativeScaler
 
-try:
-    # noinspection PyUnresolvedReferences
-    from apex import amp
-except ImportError:
-    amp = None
 
 def parse_option():
     parser = argparse.ArgumentParser('SimMIM pre-training script', add_help=False)
@@ -149,7 +144,7 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, loss_scaler, l
 
         torch.cuda.synchronize()
 
-        loss_meter.update(loss.item(), img.size(0))
+        loss_meter.update(loss.item(), x1.size(0))
         norm_meter.update(grad_norm)
         batch_time.update(time.time() - end)
         end = time.time()
@@ -171,9 +166,6 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, loss_scaler, l
 
 if __name__ == '__main__':
     _, config = parse_option()
-
-    if config.AMP_OPT_LEVEL != "O0":
-        assert amp is not None, "amp not installed!"
 
     if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
         rank = int(os.environ["RANK"])
