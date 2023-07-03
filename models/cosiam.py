@@ -177,10 +177,11 @@ class COSiam(nn.Module):
         z2 = self.decoder(ya2, random_crop, mask)
 
         B, L, C = z1.shape
-        z1 = z1.reshape((B * L, C))
-        print('!!!')
-        print(z1m.shape)
-        print(z2m.shape)
+        B, H, W, C = z1m.shape
+        z1m = z1m.view(B, H * W, C)
+        z2m = z2m.view(B, H * W, C)
+
+        z1 = z1.view((B * L, C))
         z1m = z1m.view((B * L, C))
         z2 = z2.view((B * L, C))
         z2m = z2m.view((B * L, C))
