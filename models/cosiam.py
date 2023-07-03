@@ -74,9 +74,6 @@ class VisionTransformerEncoder(VisionTransformer):
             x = x.reshape(B, L + 1, -1)
 
         x = x[:, 1:]
-        B, L, C = x.shape
-        H = W = int(L ** 0.5)
-        x = x.reshape(B, H, W, C)
         return x
 
 
@@ -97,8 +94,6 @@ class VisionTransformerDecoder(VisionTransformer):
     def forward(self, x, random_crop, mask):
         B, H, W, C = x.shape
 
-        L = H * W
-        x = x.reshape(B, L, C)
         mask_token = self.mask_token.expand(B, L, -1)
         w = mask.flatten(1).unsqueeze(-1).type_as(mask_token)
         x = x * (1 - w) + mask_token * w
@@ -177,9 +172,6 @@ class COSiam(nn.Module):
         z2 = self.decoder(ya2, random_crop, mask)
 
         B, L, C = z1.shape
-        B, H, W, C = z1m.shape
-        z1m = z1m.reshape(B, H * W, C)
-        z2m = z2m.reshape(B, H * W, C)
 
         z1 = z1.view((B * L, C))
         z1m = z1m.view((B * L, C))
