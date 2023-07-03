@@ -178,10 +178,8 @@ class COSiam(nn.Module):
 
         B, L, C = z1.shape
         B, H, W, C = z1m.shape
-        print('!!')
-        print(B, H, W, L, C)
-        z1m = z1m.view(B, H * W, C)
-        z2m = z2m.view(B, H * W, C)
+        z1m = z1m.reshape(B, H * W, C)
+        z2m = z2m.reshape(B, H * W, C)
 
         z1 = z1.view((B * L, C))
         z1m = z1m.view((B * L, C))
