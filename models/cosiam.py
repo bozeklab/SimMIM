@@ -128,6 +128,8 @@ class COSiam(nn.Module):
     def __init__(self, encoder, decoder):
         super().__init__()
 
+        self.F = None
+
         self.base_encoder = encoder
         self.momentum_encoder = copy.deepcopy(self.base_encoder)
         self.decoder = decoder
@@ -185,8 +187,6 @@ class COSiam(nn.Module):
         z1m = z1m.reshape((B * L, C))
         z2 = z2.reshape((B * L, C))
         z2m = z2m.reshape((B * L, C))
-
-        print('!!!!')
 
         loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
 
