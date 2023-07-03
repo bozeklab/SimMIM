@@ -115,6 +115,14 @@ class VisionTransformerDecoder(VisionTransformer):
         return x
 
 
+class IdentityModel(nn.Module):
+    def __init__(self):
+        super(IdentityModel, self).__init__()
+
+    def forward(self, x):
+        return x
+
+
 class COSiam(nn.Module):
     """Momentum encoder implementation stolen from MoCo v3"""
     def __init__(self, encoder, decoder):
@@ -221,23 +229,25 @@ def build_cosiam(config):
             use_mean_pooling=config.MODEL.ENCODER.VIT.USE_MEAN_POOLING,
             num_projection_layers=config.MODEL.ENCODER.VIT.NUM_PROJECTION_LAYERS)
 
-        decoder = VisionTransformerDecoder(
-            img_size=config.DATA.IMG_SIZE,
-            patch_size=config.MODEL.DECODER.VIT.PATCH_SIZE,
-            num_classes=0,
-            embed_dim=config.MODEL.DECODER.VIT.EMBED_DIM,
-            depth=config.MODEL.DECODER.VIT.DEPTH,
-            num_heads=config.MODEL.DECODER.VIT.NUM_HEADS,
-            mlp_ratio=config.MODEL.DECODER.VIT.MLP_RATIO,
-            qkv_bias=config.MODEL.DECODER.VIT.QKV_BIAS,
-            drop_rate=config.MODEL.DROP_RATE,
-            drop_path_rate=config.MODEL.DROP_PATH_RATE,
-            norm_layer=partial(nn.LayerNorm, eps=1e-6),
-            init_values=config.MODEL.VIT.INIT_VALUES,
-            use_abs_pos_emb=config.MODEL.DECODER.VIT.USE_APE,
-            use_rel_pos_bias=config.MODEL.DECODER.VIT.USE_RPB,
-            use_shared_rel_pos_bias=config.MODEL.DECODER.VIT.USE_SHARED_RPB,
-            use_mean_pooling=config.MODEL.DECODER.VIT.USE_MEAN_POOLING)
+        decoder = IdentityModel()
+
+        # decoder = VisionTransformerDecoder(
+        #     img_size=config.DATA.IMG_SIZE,
+        #     patch_size=config.MODEL.DECODER.VIT.PATCH_SIZE,
+        #     num_classes=0,
+        #     embed_dim=config.MODEL.DECODER.VIT.EMBED_DIM,
+        #     depth=config.MODEL.DECODER.VIT.DEPTH,
+        #     num_heads=config.MODEL.DECODER.VIT.NUM_HEADS,
+        #     mlp_ratio=config.MODEL.DECODER.VIT.MLP_RATIO,
+        #     qkv_bias=config.MODEL.DECODER.VIT.QKV_BIAS,
+        #     drop_rate=config.MODEL.DROP_RATE,
+        #     drop_path_rate=config.MODEL.DROP_PATH_RATE,
+        #     norm_layer=partial(nn.LayerNorm, eps=1e-6),
+        #     init_values=config.MODEL.VIT.INIT_VALUES,
+        #     use_abs_pos_emb=config.MODEL.DECODER.VIT.USE_APE,
+        #     use_rel_pos_bias=config.MODEL.DECODER.VIT.USE_RPB,
+        #     use_shared_rel_pos_bias=config.MODEL.DECODER.VIT.USE_SHARED_RPB,
+        #     use_mean_pooling=config.MODEL.DECODER.VIT.USE_MEAN_POOLING)
     else:
         raise NotImplementedError(f"Unknown pre-train model: {model_type}")
 
