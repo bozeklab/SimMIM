@@ -92,7 +92,7 @@ class VisionTransformerDecoder(VisionTransformer):
         trunc_normal_(tensor, mean=mean, std=std, a=-std, b=std)
 
     def forward(self, x, random_crop, mask):
-        B, H, W, C = x.shape
+        B, L, C = x.shape
 
         mask_token = self.mask_token.expand(B, L, -1)
         w = mask.flatten(1).unsqueeze(-1).type_as(mask_token)
