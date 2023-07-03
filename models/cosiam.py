@@ -120,6 +120,8 @@ class IdentityModel(nn.Module):
         super(IdentityModel, self).__init__()
 
     def forward(self, x, random_crop, mask):
+        print('!!!!')
+        print(x.shape)
         return x
 
 
