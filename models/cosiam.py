@@ -178,6 +178,8 @@ class COSiam(nn.Module):
         z2 = z2.view((B * L, C))
         z2m = z2m.view((B * L, C))
 
+        print('!!!!')
+
         loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
 
     @torch.jit.ignore
