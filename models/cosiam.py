@@ -120,8 +120,6 @@ class IdentityModel(nn.Module):
         super(IdentityModel, self).__init__()
 
     def forward(self, x, random_crop, mask):
-        print('!!!!')
-        print(x.shape)
         return x
 
 
@@ -182,6 +180,9 @@ class COSiam(nn.Module):
         z2 = self.decoder(ya2, random_crop, mask)
 
         B, L, C = z1.shape
+
+        print('!!!')
+        print(z1.shape)
 
         z1 = z1.view((B * L, C))
         z1m = z1m.view((B * L, C))
