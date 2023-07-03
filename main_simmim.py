@@ -94,7 +94,7 @@ def main(config):
 
     loss_scaler = NativeScaler()
     if config.MODEL.RESUME:
-        load_checkpoint(config, model_without_ddp, optimizer, lr_scheduler, loss_scaler, logger)
+        load_checkpoint(config, model_without_ddp, optimizer, loss_scaler, lr_scheduler, logger)
 
     logger.info("Start training")
     start_time = time.time()
