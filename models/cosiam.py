@@ -166,8 +166,10 @@ class COSiam(nn.Module):
 
         ya1 = self.encoder(x1)
         ya2 = self.encoder(x2)
-        z1m = self.encoder(x2)
-        z2m = self.encoder(x1)
+        with torch.no_grad():  # no gradient
+            self._update_momentum_encoder(mm)    # update the momentum encoder
+            z1m = self.momentum_encoder(x2)
+            z2m = self.momentum_encoder(x1)
 
         z1 = self.decoder(ya1, random_crop, mask)
         random_crop = torch.concat([random_crop[:, 4:], random_crop[:, :4]], dim=1)
