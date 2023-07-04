@@ -99,8 +99,6 @@ class PositionalEmbedding(nn.Module):
         batch_size = random_crop.shape[0]
 
         grid_h = np.arange(grid_size, dtype=np.float32)
-        print('!!!!')
-        print(grid_h.device)
 
         grid_w = np.arange(grid_size, dtype=np.float32)
         grid = np.meshgrid(grid_w, grid_h)  # here w goes first
