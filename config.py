@@ -61,7 +61,7 @@ _C.MODEL.LABEL_SMOOTHING = 0.1
 # UniGrad parameters
 _C.MODEL.UNIGRAD = CN()
 _C.MODEL.UNIGRAD.RHO = 0.99
-_C.MODEL.UNIGRAD.lambd = 100.0
+_C.MODEL.UNIGRAD.LAMBD = 100.0
 
 # Swin Transformer parameters
 _C.MODEL.SWIN = CN()
