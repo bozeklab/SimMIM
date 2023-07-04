@@ -98,13 +98,13 @@ class VisionTransformerDecoder(VisionTransformer):
         w = mask.flatten(1).unsqueeze(-1).type_as(mask_token)
         x = x * (1 - w) + mask_token * w
 
-        p_a, p_b = self.pos_embed(random_crop, L ** 2)
+        #p_a, p_b = self.pos_embed(random_crop, L ** 2)
 
-        p_a = p_a.cuda()
-        p_b = p_b.cuda()
+        #p_a = p_a.cuda()
+        #p_b = p_b.cuda()
 
-        p = p_a * (1 - w) + p_b * w
-        x = x + p
+        #p = p_a * (1 - w) + p_b * w
+        #x = x + p
         x = self.pos_drop(x)
 
         rel_pos_bias = None
