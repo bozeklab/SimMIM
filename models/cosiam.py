@@ -159,6 +159,8 @@ class COSiam(nn.Module):
         ya1 = self.encoder(x1)
         ya2 = self.encoder(x2)
 
+        print('after encoder')
+
         z1 = self.decoder(ya1, random_crop, mask)
         random_crop = torch.concat([random_crop[:, 4:], random_crop[:, :4]], dim=1)
         z2 = self.decoder(ya2, random_crop, mask)
