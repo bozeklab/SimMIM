@@ -98,18 +98,17 @@ class PositionalEmbedding(nn.Module):
     def calculate_grid(self, random_crop, grid_size) -> Tuple[Tensor, Tensor]:
         batch_size = random_crop.shape[0]
 
-        grid_h = np.arange(grid_size, dtype=np.float32)
+        grid_h = torch.arange(grid_size).float()
 
-        grid_w = np.arange(grid_size, dtype=np.float32)
-        grid = np.meshgrid(grid_w, grid_h)  # here w goes first
-        grid = np.stack(grid, axis=0)
+        grid_w = torch.arange(grid_size).float()
+        grid = torch.meshgrid(grid_w, grid_h)  # here w goes first
+        grid = torch.stack((grid[0].t(), grid[1].t()), dim=0)
 
         grid1 = grid.reshape([2, grid_size, grid_size])
-        grid2 = grid1.copy()
+        grid2 = grid1.clone()
 
         grid1 = torch.tensor(np.repeat(grid1[np.newaxis, :], batch_size, axis=0), dtype=torch.float32)
-        grid2 = PositionalEmbedding.encode_relative_position(torch.tensor(grid2, dtype=torch.float32),
-                                                             random_crop, grid_size)
+        grid2 = PositionalEmbedding.encode_relative_position(grid2, random_crop, grid_size)
 
         return grid1, grid2
 
