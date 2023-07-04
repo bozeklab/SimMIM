@@ -125,13 +125,6 @@ class COSiam(nn.Module):
         self.encoder = encoder
         self.decoder = decoder
 
-    @torch.no_grad()
-    def _update_momentum_encoder(self, m):
-        """Momentum update of the momentum encoder"""
-        for param_b, param_m in zip(self.encoder.parameters(),
-                                    self.momentum_encoder.parameters()):
-            param_m.data = param_m.data * m + param_b.data * (1. - m)
-
     def loss_unigrad(self, z1, z2, z1m, z2m):
         # calculate correlation matrix
         z1m = z1m.detach()
