@@ -178,7 +178,9 @@ class COSiam(nn.Module):
         B, L, C = z1.shape
 
         z1 = z1.reshape((B * L, C))
+        z1m = z1m.reshape((B * L, C))
         z2 = z2.reshape((B * L, C))
+        z2m = z2m.reshape((B * L, C))
 
         loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
 
