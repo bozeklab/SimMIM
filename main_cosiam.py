@@ -5,8 +5,9 @@
 # Written by Ze Liu
 # Modified by Zhenda Xie
 # --------------------------------------------------------
-
+import math
 import os
+import sys
 import time
 import argparse
 import datetime
@@ -68,7 +69,9 @@ def main(config):
     logger.info(str(model))
 
     optimizer = build_optimizer(config, model, logger, is_pretrain=True)
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[config.LOCAL_RANK], broadcast_buffers=False)
+    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[config.LOCAL_RANK],
+                                                      find_unused_parameters=True,
+                                                      broadcast_buffers=False)
     model_without_ddp = model.module
 
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -134,6 +137,12 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, loss_scaler, l
         with torch.cuda.amp.autocast():
             loss = model(x1, x2, random_crop, m, mask)
 
+        loss_value = loss.item()
+
+        if not math.isfinite(loss_value):
+            print("Loss is {}, stopping training".format(loss_value))
+            sys.exit(1)
+
         loss = loss / config.TRAIN.ACCUMULATION_STEPS
         grad_norm = loss_scaler(loss, optimizer, parameters=model.parameters(),
                                  update_grad=(data_iter_step + 1) % config.TRAIN.ACCUMULATION_STEPS == 0)
@@ -165,7 +174,6 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, loss_scaler, l
 
 
 if __name__ == '__main__':
-    os.environ["TORCH_DISTRIBUTED_DEBUG"] = "DETAIL"  # set to DETAIL for runtime logging.
     _, config = parse_option()
 
     if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
