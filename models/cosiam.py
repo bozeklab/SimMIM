@@ -129,7 +129,7 @@ class COSiam(nn.Module):
     @torch.no_grad()
     def _update_momentum_encoder(self, m):
         """Momentum update of the momentum encoder"""
-        for param_b, param_m in zip(self.encoder.parameters(),
+        for param_b, param_m in zip(self.base_encoder.parameters(),
                                     self.momentum_encoder.parameters()):
             param_m.data = param_m.data * m + param_b.data * (1. - m)
 
