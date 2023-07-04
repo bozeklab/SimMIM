@@ -115,14 +115,6 @@ class VisionTransformerDecoder(VisionTransformer):
         return x
 
 
-class IdentityModel(nn.Module):
-    def __init__(self):
-        super(IdentityModel, self).__init__()
-
-    def forward(self, x, random_crop, mask):
-        return x
-
-
 class COSiam(nn.Module):
     """Momentum encoder implementation stolen from MoCo v3"""
     def __init__(self, encoder, decoder):
@@ -130,20 +122,20 @@ class COSiam(nn.Module):
 
         self.F = None
 
-        self.base_encoder = encoder
-        self.momentum_encoder = copy.deepcopy(self.base_encoder)
-        self.momentum_encoder.eval()
+        self.encoder = encoder
         self.decoder = decoder
 
     @torch.no_grad()
     def _update_momentum_encoder(self, m):
         """Momentum update of the momentum encoder"""
-        for param_b, param_m in zip(self.base_encoder.parameters(),
+        for param_b, param_m in zip(self.encoder.parameters(),
                                     self.momentum_encoder.parameters()):
             param_m.data = param_m.data * m + param_b.data * (1. - m)
 
     def loss_unigrad(self, z1, z2, z1m, z2m):
         # calculate correlation matrix
+        z1m = z1m.detach()
+        z2m = z2m.detach()
         tmp_F = (torch.mm(z1m.t(), z1m) + torch.mm(z2m.t(), z2m)) / (2 * z1m.shape[0])
         torch.distributed.all_reduce(tmp_F)
         tmp_F = tmp_F / torch.distributed.get_world_size()
@@ -171,12 +163,10 @@ class COSiam(nn.Module):
     def forward(self, x1, x2, random_crop, mm, mask):
         assert mask is not None
 
-        ya1 = self.base_encoder(x1)
-        ya2 = self.base_encoder(x2)
-        with torch.no_grad():  # no gradient
-            self._update_momentum_encoder(mm)    # update the momentum encoder
-            z1m = self.momentum_encoder(x2)
-            z2m = self.momentum_encoder(x1)
+        ya1 = self.encoder(x1)
+        ya2 = self.encoder(x2)
+        z1m = self.encoder(x2)
+        z2m = self.encoder(x1)
 
         z1 = self.decoder(ya1, random_crop, mask)
         random_crop = torch.concat([random_crop[:, 4:], random_crop[:, :4]], dim=1)
