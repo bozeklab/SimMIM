@@ -138,8 +138,6 @@ class COSiam(nn.Module):
 
     def loss_unigrad(self, z1, z2, z1m, z2m):
         # calculate correlation matrix
-        z1m = z1m.detach()
-        z2m = z2m.detach()
         tmp_F = (torch.mm(z1m.t(), z1m) + torch.mm(z2m.t(), z2m)) / (2 * z1m.shape[0])
         torch.distributed.all_reduce(tmp_F)
         tmp_F = tmp_F / torch.distributed.get_world_size()
