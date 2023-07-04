@@ -125,6 +125,13 @@ class COSiam(nn.Module):
         self.encoder = encoder
         self.decoder = decoder
 
+    @torch.no_grad()
+    def _update_momentum_encoder(self, m):
+        """Momentum update of the momentum encoder"""
+        for param_b, param_m in zip(self.encoder.parameters(),
+                                    self.momentum_encoder.parameters()):
+            param_m.data = param_m.data * m + param_b.data * (1. - m)
+
     def loss_unigrad(self, z1, z2, z1m, z2m):
         # calculate correlation matrix
         z1m = z1m.detach()
@@ -158,8 +165,8 @@ class COSiam(nn.Module):
 
         ya1 = self.encoder(x1)
         ya2 = self.encoder(x2)
-
-        print('after encoder')
+        z1m = self.encoder(x2)
+        z2m = self.encoder(x1)
 
         z1 = self.decoder(ya1, random_crop, mask)
         random_crop = torch.concat([random_crop[:, 4:], random_crop[:, :4]], dim=1)
@@ -170,12 +177,12 @@ class COSiam(nn.Module):
         z1 = z1.reshape((B * L, C))
         z2 = z2.reshape((B * L, C))
 
-        loss, _ = self.loss_unigrad(z1, z2, ya2, ya1)
+        loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
 
     @torch.jit.ignore
     def no_weight_decay(self):
         no_weight_decay = set()
-        for field_name in ['encoder', 'decoder']:
+        for field_name in ['base_encoder', 'momentum_encoder', 'decoder']:
             field_value = getattr(self, field_name)
             no_weight_decay.update({f'{field_name}.' + i for i in field_value.no_weight_decay()}) \
                 if hasattr(field_value, 'no_weight_decay') else {}
@@ -184,7 +191,7 @@ class COSiam(nn.Module):
     @torch.jit.ignore
     def no_weight_decay_keywords(self):
         no_weight_decay = set()
-        for field_name in ['encoder', 'decoder']:
+        for field_name in ['base_encoder', 'momentum_encoder', 'decoder']:
             field_value = getattr(self, field_name)
             no_weight_decay.update({f'{field_name}.' + i for i in field_value.no_weight_decay()}) \
                 if hasattr(field_value, 'no_weight_decay_keywords') else {}
