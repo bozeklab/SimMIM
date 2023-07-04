@@ -164,8 +164,8 @@ class COSiam(nn.Module):
     def forward(self, x1, x2, random_crop, mm, mask):
         assert mask is not None
 
-        ya1 = self.encoder(x1)
-        ya2 = self.encoder(x2)
+        ya1 = self.base_encoder(x1)
+        ya2 = self.base_encoder(x2)
         with torch.no_grad():  # no gradient
             self._update_momentum_encoder(mm)    # update the momentum encoder
             z1m = self.momentum_encoder(x2)
