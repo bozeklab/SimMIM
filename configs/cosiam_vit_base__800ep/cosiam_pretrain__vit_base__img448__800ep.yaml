@@ -14,13 +14,13 @@ MODEL:
   DECODER:
     VIT:
       EMBED_DIM: 768
-      DEPTH: 3
+      DEPTH: 4
       NUM_HEADS: 12
       USE_APE: False
       USE_RPB: False
       USE_SHARED_RPB: False
 DATA:
-  IMG_SIZE: 224
+  IMG_SIZE: 448
   MASK_PATCH_SIZE: 32
   MASK_RATIO: 0.6
 TRAIN:
