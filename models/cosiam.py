@@ -83,7 +83,7 @@ class VisionTransformerDecoder(VisionTransformer):
 
         assert self.num_classes == 0
 
-        self.pos_embed = PositionalEmbedding(self.embed_dim, )
+        #self.pos_embed = PositionalEmbedding(self.embed_dim, )
 
         self.mask_token = nn.Parameter(torch.zeros(1, 1, self.embed_dim))
         self._trunc_normal_(self.mask_token, std=.02)
@@ -246,7 +246,8 @@ def build_cosiam(config):
     else:
         raise NotImplementedError(f"Unknown pre-train model: {model_type}")
 
-    model = COSiam(encoder=encoder, decoder=decoder,
+    model = COSiam(encoder=encoder,
+                   decoder=decoder,
                    rho=config.MODEL.UNIGRAD.RHO,
                    lambd=config.MODEL.UNIGRAD.LAMBD)
 
