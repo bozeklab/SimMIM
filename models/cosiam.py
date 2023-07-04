@@ -187,6 +187,8 @@ class COSiam(nn.Module):
 
         loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
 
+        return loss
+
     @torch.jit.ignore
     def no_weight_decay(self):
         no_weight_decay = set()
