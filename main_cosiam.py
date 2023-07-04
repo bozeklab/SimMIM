@@ -165,6 +165,7 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, loss_scaler, l
 
 
 if __name__ == '__main__':
+    os.environ["TORCH_DISTRIBUTED_DEBUG"] = "DETAIL"  # set to DETAIL for runtime logging.
     _, config = parse_option()
 
     if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
