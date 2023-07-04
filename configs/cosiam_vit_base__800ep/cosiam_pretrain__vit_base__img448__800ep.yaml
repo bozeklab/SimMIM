@@ -7,9 +7,9 @@ MODEL:
       EMBED_DIM: 768
       DEPTH: 12
       NUM_HEADS: 12
-      USE_APE: False
+      USE_APE: True
       USE_RPB: False
-      USE_SHARED_RPB: True
+      USE_SHARED_RPB: False
       NUM_PROJECTION_LAYERS: 3
   DECODER:
     VIT:
