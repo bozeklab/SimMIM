@@ -209,8 +209,6 @@ def build_cosiam(config):
             use_mean_pooling=config.MODEL.ENCODER.VIT.USE_MEAN_POOLING,
             num_projection_layers=config.MODEL.ENCODER.VIT.NUM_PROJECTION_LAYERS)
 
-        #decoder = IdentityModel()
-
         decoder = VisionTransformerDecoder(
             img_size=config.DATA.IMG_SIZE,
             patch_size=config.MODEL.DECODER.VIT.PATCH_SIZE,
