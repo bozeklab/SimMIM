@@ -107,7 +107,7 @@ class PositionalEmbedding(nn.Module):
         grid1 = grid.reshape([2, grid_size, grid_size])
         grid2 = grid1.clone()
 
-        grid1 = torch.tensor(np.repeat(grid1[np.newaxis, :], batch_size, axis=0), dtype=torch.float32)
+        grid1 = grid1.unsqueeze(0).repeat(batch_size, 1, 1)
         grid2 = PositionalEmbedding.encode_relative_position(grid2, random_crop, grid_size)
 
         return grid1, grid2
