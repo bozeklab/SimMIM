@@ -58,6 +58,11 @@ _C.MODEL.DROP_PATH_RATE = 0.1
 # Label Smoothing
 _C.MODEL.LABEL_SMOOTHING = 0.1
 
+# UniGrad parameters
+_C.MODEL.UNIGRAD = CN()
+_C.MODEL.UNIGRAD.RHO = 0.99
+_C.MODEL.UNIGRAD.lambd = 100.0
+
 # Swin Transformer parameters
 _C.MODEL.SWIN = CN()
 _C.MODEL.SWIN.PATCH_SIZE = 4

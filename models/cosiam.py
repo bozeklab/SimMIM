@@ -83,7 +83,7 @@ class VisionTransformerDecoder(VisionTransformer):
 
         assert self.num_classes == 0
 
-        self.pos_embed = PositionalEmbedding(self.embed_dim)
+        self.pos_embed = PositionalEmbedding(self.embed_dim, )
 
         self.mask_token = nn.Parameter(torch.zeros(1, 1, self.embed_dim))
         self._trunc_normal_(self.mask_token, std=.02)
@@ -98,13 +98,13 @@ class VisionTransformerDecoder(VisionTransformer):
         w = mask.flatten(1).unsqueeze(-1).type_as(mask_token)
         x = x * (1 - w) + mask_token * w
 
-        p_a, p_b = self.pos_embed(random_crop, L ** 2)
+        #p_a, p_b = self.pos_embed(random_crop, L ** 2)
 
-        p_a = p_a.cuda()
-        p_b = p_b.cuda()
+        #p_a = p_a.cuda()
+        #p_b = p_b.cuda()
 
-        p = p_a * (1 - w) + p_b * w
-        x = x + p
+        #p = p_a * (1 - w) + p_b * w
+        #x = x + p
         x = self.pos_drop(x)
 
         rel_pos_bias = None
@@ -117,10 +117,13 @@ class VisionTransformerDecoder(VisionTransformer):
 
 class COSiam(nn.Module):
     """Momentum encoder implementation stolen from MoCo v3"""
-    def __init__(self, encoder, decoder):
+    def __init__(self, encoder, decoder, rho, lambd):
         super().__init__()
 
         self.F = None
+
+        self.rho = rho
+        self.lambd = lambd
 
         self.base_encoder = encoder
         self.momentum_encoder = copy.deepcopy(self.base_encoder)
@@ -143,13 +146,13 @@ class COSiam(nn.Module):
         if self.F is None:
             self.F = tmp_F.detach()
         else:
-            self.F = self.cfg.rho * self.F + (1 - self.cfg.rho) * tmp_F.detach()
+            self.F = self.rho * self.F + (1 - self.rho) * tmp_F.detach()
 
         # compute grad & loss
-        grad1 = -z2m + self.cfg.lambd * torch.mm(z1, self.F)
+        grad1 = -z2m + self.lambd * torch.mm(z1, self.F)
         loss1 = (grad1.detach() * z1).sum(-1).mean()
 
-        grad2 = -z1m + self.cfg.lambd * torch.mm(z2, self.F)
+        grad2 = -z1m + self.lambd * torch.mm(z2, self.F)
         loss2 = (grad2.detach() * z2).sum(-1).mean()
 
         loss = 0.5 * (loss1 + loss2)
@@ -243,6 +246,8 @@ def build_cosiam(config):
     else:
         raise NotImplementedError(f"Unknown pre-train model: {model_type}")
 
-    model = COSiam(encoder=encoder, decoder=decoder)
+    model = COSiam(encoder=encoder, decoder=decoder,
+                   rho=config.MODEL.UNIGRAD.RHO,
+                   lambd=config.MODEL.UNIGRAD.LAMBD)
 
     return model
