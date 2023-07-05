@@ -183,6 +183,12 @@ class COSiam(nn.Module):
         z2 = z2.reshape((B * L, C))
         z2m = z2m.reshape((B * L, C))
 
+        # normalize
+        z1 = torch.nn.functional.normalize(z1)
+        z2 = torch.nn.functional.normalize(z2)
+        z1m = torch.nn.functional.normalize(z1m)
+        z2m = torch.nn.functional.normalize(z2m)
+
         loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
 
         return loss
