@@ -19,11 +19,11 @@ class PositionalEmbedding(nn.Module):
         self.embed_dim = embed_dim
         self.dim_fix = nn.Linear(2 * embed_dim, embed_dim)
 
+        print('!!!!!')
+        print(self.dim_fix.device)
+
         grid_h = torch.arange(grid_size).float()
         grid_w = torch.arange(grid_size).float()
-
-        print('!!!')
-        print(grid_h.device)
 
         grid = torch.meshgrid(grid_w, grid_h)  # here w goes first
         grid = torch.stack((grid[0].t(), grid[1].t()), dim=0)
