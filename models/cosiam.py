@@ -175,6 +175,8 @@ class COSiam(nn.Module):
         random_crop = torch.concat([random_crop[:, 4:], random_crop[:, :4]], dim=1)
         z2 = self.decoder(ya2, random_crop, mask)
 
+        print(z2)
+
         B, L, C = z1.shape
 
         z1 = z1.reshape((B * L, C))
