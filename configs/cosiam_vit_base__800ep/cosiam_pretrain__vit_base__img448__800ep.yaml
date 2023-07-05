@@ -4,7 +4,7 @@ MODEL:
   DROP_PATH_RATE: 0.1
   ENCODER:
     VIT:
-      EMBED_DIM: 512
+      EMBED_DIM: 768
       DEPTH: 12
       NUM_HEADS: 12
       USE_APE: False
@@ -13,7 +13,7 @@ MODEL:
       NUM_PROJECTION_LAYERS: 3
   DECODER:
     VIT:
-      EMBED_DIM: 512
+      EMBED_DIM: 768
       DEPTH: 3
       NUM_HEADS: 12
       USE_APE: False
@@ -35,5 +35,5 @@ TRAIN:
     GAMMA: 0.1
     MULTISTEPS: [700,]
 PRINT_FREQ: 100
-SAVE_FREQ: 20
+SAVE_FREQ: 200
 TAG: cosiam_pretrain__vit_base__img448__800ep

@@ -78,12 +78,14 @@ class VisionTransformerEncoder(VisionTransformer):
 
 
 class VisionTransformerDecoder(VisionTransformer):
-    def __init__(self, **kwargs):
+    def __init__(self, batch_size, **kwargs):
         super().__init__(**kwargs)
 
         assert self.num_classes == 0
 
-        #self.pos_embed = PositionalEmbedding(self.embed_dim, )
+        grid_size = kwargs['img_size'] // kwargs['patch_size']
+
+        self.pos_embed = PositionalEmbedding(batch_size, grid_size, self.embed_dim)
 
         self.mask_token = nn.Parameter(torch.zeros(1, 1, self.embed_dim))
         self._trunc_normal_(self.mask_token, std=.02)
@@ -98,13 +100,13 @@ class VisionTransformerDecoder(VisionTransformer):
         w = mask.flatten(1).unsqueeze(-1).type_as(mask_token)
         x = x * (1 - w) + mask_token * w
 
-        #p_a, p_b = self.pos_embed(random_crop, L ** 2)
+        p_a, p_b = self.pos_embed(random_crop, L ** 2)
 
-        #p_a = p_a.cuda()
-        #p_b = p_b.cuda()
+        p_a = p_a.cuda()
+        p_b = p_b.cuda()
 
-        #p = p_a * (1 - w) + p_b * w
-        #x = x + p
+        p = p_a * (1 - w) + p_b * w
+        x = x + p
         x = self.pos_drop(x)
 
         rel_pos_bias = None
@@ -248,7 +250,9 @@ def build_cosiam(config):
             use_abs_pos_emb=config.MODEL.DECODER.VIT.USE_APE,
             use_rel_pos_bias=config.MODEL.DECODER.VIT.USE_RPB,
             use_shared_rel_pos_bias=config.MODEL.DECODER.VIT.USE_SHARED_RPB,
-            use_mean_pooling=config.MODEL.DECODER.VIT.USE_MEAN_POOLING)
+            use_mean_pooling=config.MODEL.DECODER.VIT.USE_MEAN_POOLING,
+            batch_size=config.DATA.BATCH_SIZE,
+            )
     else:
         raise NotImplementedError(f"Unknown pre-train model: {model_type}")
 
