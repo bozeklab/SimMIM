@@ -190,7 +190,8 @@ class COSiam(nn.Module):
         z1m = torch.nn.functional.normalize(z1m)
         z2m = torch.nn.functional.normalize(z2m)
 
-        loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
+        #loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
+        loss = (torch.mm(z1m.t(), z1m) + torch.mm(z2m.t(), z2m)) / (2 * z1m.shape[0])
         return loss
 
     @torch.jit.ignore
