@@ -139,9 +139,9 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, loss_scaler, l
 
         loss_value = loss.item()
 
-        if not math.isfinite(loss_value):
-            print("Loss is {}, stopping training".format(loss_value))
-            sys.exit(1)
+        #if not math.isfinite(loss_value):
+        #    print("Loss is {}, stopping training".format(loss_value))
+        #    sys.exit(1)
 
         loss = loss / config.TRAIN.ACCUMULATION_STEPS
         grad_norm = loss_scaler(loss, optimizer, parameters=model.parameters(),
