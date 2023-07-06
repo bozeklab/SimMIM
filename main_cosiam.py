@@ -5,9 +5,8 @@
 # Written by Ze Liu
 # Modified by Zhenda Xie
 # --------------------------------------------------------
-import math
+
 import os
-import sys
 import time
 import argparse
 import datetime
@@ -146,7 +145,7 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, loss_scaler, l
             lr_scheduler.step_update(epoch * num_steps + data_iter_step)
         torch.cuda.synchronize()
 
-        loss_meter.update(loss.item(), x1.size(0))
+        loss_meter.update(loss.item())
         norm_meter.update(grad_norm)
         batch_time.update(time.time() - end)
         end = time.time()
