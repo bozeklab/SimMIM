@@ -14,7 +14,7 @@ MODEL:
   DECODER:
     VIT:
       EMBED_DIM: 768
-      DEPTH: 3
+      DEPTH: 4
       NUM_HEADS: 12
       USE_APE: False
       USE_RPB: False
