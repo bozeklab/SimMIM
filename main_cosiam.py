@@ -93,6 +93,7 @@ def main(config):
         else:
             logger.info(f'no checkpoint found in {config.OUTPUT}, ignoring auto resume')
 
+    pretrainer = Pretrainer(config=config)
     loss_scaler = NativeScaler()
     if config.MODEL.RESUME:
         load_checkpoint(config, model_without_ddp, optimizer, loss_scaler, lr_scheduler, logger)
@@ -102,7 +103,8 @@ def main(config):
     for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
         data_loader_train.sampler.set_epoch(epoch)
 
-        train_one_epoch(config, model, data_loader_train, optimizer, epoch, loss_scaler, lr_scheduler, config.TRAIN.BASE_MOMENTUM)
+        pretrainer.train_one_epoch(model, data_loader_train, optimizer, epoch, loss_scaler,
+                                   lr_scheduler, config.TRAIN.BASE_MOMENTUM)
         if dist.get_rank() == 0 and (epoch % config.SAVE_FREQ == 0 or epoch == (config.TRAIN.EPOCHS - 1)):
             save_checkpoint(config, epoch, model_without_ddp, 0., optimizer, loss_scaler, lr_scheduler, logger)
 
@@ -111,58 +113,92 @@ def main(config):
     logger.info('Training time {}'.format(total_time_str))
 
 
-def train_one_epoch(config, model, data_loader, optimizer, epoch, loss_scaler, lr_scheduler, m):
-    model.train()
-    optimizer.zero_grad()
+class Pretrainer:
+    def __init__(self, config):
+        self.config = config
+        self.F = None
+        self.rho = config.MODEL.UNIGRAD.RHO
+        self.lambd = config.MODEL.UNIGRAD.LAMBD
 
-    num_steps = len(data_loader)
-    batch_time = AverageMeter()
-    loss_meter = AverageMeter()
-    norm_meter = AverageMeter()
+    def loss_unigrad(self, z1, z2, z1m, z2m):
+        # calculate correlation matrix
+        tmp_F = (torch.mm(z1m.t(), z1m) + torch.mm(z2m.t(), z2m)) / (2 * z1m.shape[0])
+        torch.distributed.all_reduce(tmp_F)
+        tmp_F = tmp_F / torch.distributed.get_world_size()
+        if self.F is None:
+            self.F = tmp_F.detach()
+        else:
+            self.F = self.rho * self.F + (1 - self.rho) * tmp_F.detach()
 
-    start = time.time()
-    end = time.time()
-    for data_iter_step, sample in enumerate(data_loader):
-        x1 = sample['x1']
-        x2 = sample['x2']
-        random_crop = sample['random_crop']
-        mask = sample['mask']
+        # compute grad & loss
+        grad1 = -z2m + self.lambd * torch.mm(z1, self.F)
+        loss1 = (grad1.detach() * z1).sum(-1).mean()
 
-        x1 = x1.cuda(non_blocking=True)
-        x2 = x2.cuda(non_blocking=True)
-        random_crop = random_crop.cuda(non_blocking=True)
-        mask = mask.cuda(non_blocking=True)
+        grad2 = -z1m + self.lambd * torch.mm(z2, self.F)
+        loss2 = (grad2.detach() * z2).sum(-1).mean()
 
-        with torch.cuda.amp.autocast():
-            loss = model(x1, x2, random_crop, m, mask)
+        loss = 0.5 * (loss1 + loss2)
 
-        loss = loss / config.TRAIN.ACCUMULATION_STEPS
-        grad_norm = loss_scaler(loss, optimizer, parameters=model.parameters(),
-                                update_grad=(data_iter_step + 1) % config.TRAIN.ACCUMULATION_STEPS == 0)
-        if (data_iter_step + 1) % config.TRAIN.ACCUMULATION_STEPS == 0:
-            optimizer.zero_grad()
-        if (data_iter_step + 1) % config.TRAIN.ACCUMULATION_STEPS == 0:
-            lr_scheduler.step_update(epoch * num_steps + data_iter_step)
-        torch.cuda.synchronize()
+        # compute positive similarity, just for observation
+        pos_sim1 = torch.einsum('nc,nc->n', [z1, z2m]).mean().detach()
+        pos_sim2 = torch.einsum('nc,nc->n', [z2, z1m]).mean().detach()
+        pos_sim = 0.5 * (pos_sim1 + pos_sim2)
 
-        loss_meter.update(loss.item())
-        norm_meter.update(grad_norm)
-        batch_time.update(time.time() - end)
+        return loss, pos_sim
+
+    def train_one_epoch(self, model, data_loader, optimizer, epoch, loss_scaler, lr_scheduler, m):
+        model.train()
+        optimizer.zero_grad()
+
+        num_steps = len(data_loader)
+        batch_time = AverageMeter()
+        loss_meter = AverageMeter()
+        norm_meter = AverageMeter()
+
+        start = time.time()
         end = time.time()
+        for data_iter_step, sample in enumerate(data_loader):
+            x1 = sample['x1']
+            x2 = sample['x2']
+            random_crop = sample['random_crop']
+            mask = sample['mask']
 
-        if data_iter_step % config.PRINT_FREQ == 0:
-            lr = optimizer.param_groups[0]['lr']
-            memory_used = torch.cuda.max_memory_allocated() / (1024.0 * 1024.0)
-            etas = batch_time.avg * (num_steps - data_iter_step)
-            logger.info(
-                f'Train: [{epoch}/{config.TRAIN.EPOCHS}][{data_iter_step}/{num_steps}]\t'
-                f'eta {datetime.timedelta(seconds=int(etas))} lr {lr:.6f}\t'
-                f'time {batch_time.val:.4f} ({batch_time.avg:.4f})\t'
-                f'loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t'
-                f'grad_norm {norm_meter.val:.4f} ({norm_meter.avg:.4f})\t'
-                f'mem {memory_used:.0f}MB')
-    epoch_time = time.time() - start
-    logger.info(f"EPOCH {epoch} training takes {datetime.timedelta(seconds=int(epoch_time))}")
+            x1 = x1.cuda(non_blocking=True)
+            x2 = x2.cuda(non_blocking=True)
+            random_crop = random_crop.cuda(non_blocking=True)
+            mask = mask.cuda(non_blocking=True)
+
+            with torch.cuda.amp.autocast():
+                z1, z2, z1m, z2m = model(x1, x2, random_crop, m, mask)
+                loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
+
+            loss = loss / self.config.TRAIN.ACCUMULATION_STEPS
+            grad_norm = loss_scaler(loss, optimizer, parameters=model.parameters(),
+                                    update_grad=(data_iter_step + 1) % self.config.TRAIN.ACCUMULATION_STEPS == 0)
+            if (data_iter_step + 1) % self.config.TRAIN.ACCUMULATION_STEPS == 0:
+                optimizer.zero_grad()
+            if (data_iter_step + 1) % self.config.TRAIN.ACCUMULATION_STEPS == 0:
+                lr_scheduler.step_update(epoch * num_steps + data_iter_step)
+            torch.cuda.synchronize()
+
+            loss_meter.update(loss.item())
+            norm_meter.update(grad_norm)
+            batch_time.update(time.time() - end)
+            end = time.time()
+
+            if data_iter_step % self.config.PRINT_FREQ == 0:
+                lr = optimizer.param_groups[0]['lr']
+                memory_used = torch.cuda.max_memory_allocated() / (1024.0 * 1024.0)
+                etas = batch_time.avg * (num_steps - data_iter_step)
+                logger.info(
+                    f'Train: [{epoch}/{self.config.TRAIN.EPOCHS}][{data_iter_step}/{num_steps}]\t'
+                    f'eta {datetime.timedelta(seconds=int(etas))} lr {lr:.6f}\t'
+                    f'time {batch_time.val:.4f} ({batch_time.avg:.4f})\t'
+                    f'loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t'
+                    f'grad_norm {norm_meter.val:.4f} ({norm_meter.avg:.4f})\t'
+                    f'mem {memory_used:.0f}MB')
+        epoch_time = time.time() - start
+        logger.info(f"EPOCH {epoch} training takes {datetime.timedelta(seconds=int(epoch_time))}")
 
 
 if __name__ == '__main__':

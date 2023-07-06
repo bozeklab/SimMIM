@@ -138,32 +138,6 @@ class COSiam(nn.Module):
                                     self.momentum_encoder.parameters()):
             param_m.data = param_m.data * m + param_b.data * (1. - m)
 
-    def loss_unigrad(self, z1, z2, z1m, z2m):
-        # calculate correlation matrix
-        tmp_F = (torch.mm(z1m.t(), z1m) + torch.mm(z2m.t(), z2m)) / (2 * z1m.shape[0])
-        torch.distributed.all_reduce(tmp_F)
-        tmp_F = tmp_F / torch.distributed.get_world_size()
-        if self.F is None:
-            self.F = tmp_F.detach()
-        else:
-            self.F = self.rho * self.F + (1 - self.rho) * tmp_F.detach()
-
-        # compute grad & loss
-        grad1 = -z2m + self.lambd * torch.mm(z1, self.F)
-        loss1 = (grad1.detach() * z1).sum(-1).mean()
-
-        grad2 = -z1m + self.lambd * torch.mm(z2, self.F)
-        loss2 = (grad2.detach() * z2).sum(-1).mean()
-
-        loss = 0.5 * (loss1 + loss2)
-
-        # compute positive similarity, just for observation
-        pos_sim1 = torch.einsum('nc,nc->n', [z1, z2m]).mean().detach()
-        pos_sim2 = torch.einsum('nc,nc->n', [z2, z1m]).mean().detach()
-        pos_sim = 0.5 * (pos_sim1 + pos_sim2)
-
-        return loss, pos_sim
-
     def forward(self, x1, x2, random_crop, mm, mask):
         assert mask is not None
 
@@ -192,9 +166,7 @@ class COSiam(nn.Module):
         z1m = torch.nn.functional.normalize(z1m)
         z2m = torch.nn.functional.normalize(z2m)
 
-        #loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
-        loss = (torch.mm(z1m.t(), z1m) + torch.mm(z2m.t(), z2m)) / (2 * z1m.shape[0])
-        return loss
+        return z1, z2, z1m, z2m
 
     @torch.jit.ignore
     def no_weight_decay(self):
@@ -255,9 +227,6 @@ def build_cosiam(config):
     else:
         raise NotImplementedError(f"Unknown pre-train model: {model_type}")
 
-    model = COSiam(encoder=encoder,
-                   decoder=decoder,
-                   rho=config.MODEL.UNIGRAD.RHO,
-                   lambd=config.MODEL.UNIGRAD.LAMBD)
+    model = COSiam(encoder=encoder, decoder=decoder)
 
     return model
