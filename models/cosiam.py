@@ -128,11 +128,11 @@ class COSiam(nn.Module):
         self.decoder = decoder
 
     @torch.no_grad()
-    def _update_momentum_encoder(self, m):
+    def _update_momentum_encoder(self, mm):
         """Momentum update of the momentum encoder"""
         for param_b, param_m in zip(self.base_encoder.parameters(),
                                     self.momentum_encoder.parameters()):
-            param_m.data = param_m.data * m + param_b.data * (1. - m)
+            param_m.data = param_m.data * mm + param_b.data * (1. - mm)
 
     def forward(self, x1, x2, random_crop, mm, mask):
         assert mask is not None
