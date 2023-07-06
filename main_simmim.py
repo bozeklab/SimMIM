@@ -15,7 +15,7 @@ import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
-from timm.utils import AverageMeter, NativeScaler
+from timm.utils import AverageMeter
 from torch import amp
 
 from config import get_config
