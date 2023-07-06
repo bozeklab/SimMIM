@@ -134,8 +134,7 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, loss_scaler, l
         mask = mask.cuda(non_blocking=True)
 
         with torch.cuda.amp.autocast():
-            z1, z2, z1m, z2m = model(x1, x2, random_crop, m, mask)
-            loss, _ = model.loss_unigrad(z1, z2, z1m, z2m)
+            loss = model(x1, x2, random_crop, m, mask)
 
         loss = loss / config.TRAIN.ACCUMULATION_STEPS
         grad_norm = loss_scaler(loss, optimizer, parameters=model.parameters(),
@@ -146,7 +145,7 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, loss_scaler, l
             lr_scheduler.step_update(epoch * num_steps + data_iter_step)
         torch.cuda.synchronize()
 
-        loss_meter.update(loss.item())
+        loss_meter.update(loss.item(), x1[0].shape)
         norm_meter.update(grad_norm)
         batch_time.update(time.time() - end)
         end = time.time()
