@@ -153,6 +153,7 @@ class Pretrainer:
         num_steps = len(data_loader)
         batch_time = AverageMeter()
         loss_meter = AverageMeter()
+        pos_sim_meter = AverageMeter()
         norm_meter = AverageMeter()
 
         start = time.time()
@@ -197,6 +198,7 @@ class Pretrainer:
 
             loss_meter.update(loss.item())
             norm_meter.update(grad_norm)
+            pos_sim_meter.update(pos_sim.item())
             batch_time.update(time.time() - end)
             end = time.time()
 
@@ -209,6 +211,7 @@ class Pretrainer:
                     f'eta {datetime.timedelta(seconds=int(etas))} lr {lr:.6f}\t'
                     f'time {batch_time.val:.4f} ({batch_time.avg:.4f})\t'
                     f'loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t'
+                    f'pos_sim {pos_sim_meter.val:.4f} ({pos_sim_meter.avg:.4f})\t'
                     f'grad_norm {norm_meter.val:.4f} ({norm_meter.avg:.4f})\t'
                     f'mem {memory_used:.0f}MB')
         epoch_time = time.time() - start
