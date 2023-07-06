@@ -8,6 +8,8 @@ import torch.nn as nn
 # --------------------------------------------------------
 import torch
 from typing import Tuple
+
+from timm.models import trunc_normal_
 from torch import Tensor
 
 
@@ -25,6 +27,24 @@ class PositionalEmbedding(nn.Module):
         grid = torch.stack((grid[0].t(), grid[1].t()), dim=0)
 
         self.grid1 = grid.reshape([2, grid_size, grid_size])
+
+        self.apply(self._init_weights)
+
+    def _trunc_normal_(self, tensor, mean=0., std=1.):
+        trunc_normal_(tensor, mean=mean, std=std)
+
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            self._trunc_normal_(m.weight, std=.02)
+            if isinstance(m, nn.Linear) and m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.LayerNorm):
+            nn.init.constant_(m.bias, 0)
+            nn.init.constant_(m.weight, 1.0)
+        elif isinstance(m, nn.Conv2d):
+            self._trunc_normal_(m.weight, std=.02)
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0)
 
     @staticmethod
     def encode_relative_position(grid, random_crop, grid_size):
@@ -103,7 +123,6 @@ class PositionalEmbedding(nn.Module):
         return emb
 
     def forward(self, random_crop, grid_size, cls_token=False) -> Tuple[Tensor, Tensor]:
-        #grid1, grid2 = self.calculate_grid(random_crop, grid_size)
         batch_size = random_crop.shape[0]
 
         grid2 = self.grid1
