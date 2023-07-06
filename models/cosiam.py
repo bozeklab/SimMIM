@@ -82,11 +82,11 @@ class VisionTransformerDecoder(VisionTransformer):
         super().__init__(**kwargs)
 
         assert self.num_classes == 0
-        self.pos_embed = None
+        self.patch_embed = None
 
         grid_size = kwargs['img_size'] // kwargs['patch_size']
 
-        self.patch_embed = PositionalEmbedding(grid_size, self.embed_dim)
+        self.pos_embed = PositionalEmbedding(grid_size, self.embed_dim)
 
         self.mask_token = nn.Parameter(torch.zeros(1, 1, self.embed_dim))
         self._trunc_normal_(self.mask_token, std=.02)
