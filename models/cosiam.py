@@ -83,6 +83,7 @@ class VisionTransformerDecoder(VisionTransformer):
 
         assert self.num_classes == 0
         self.patch_embed = None
+        self.cls_token = None
 
         grid_size = kwargs['img_size'] // kwargs['patch_size']
 
@@ -147,19 +148,6 @@ class COSiam(nn.Module):
             self._update_momentum_encoder(mm)    # update the momentum encoder
             z1m = self.momentum_encoder(x1)
             z2m = self.momentum_encoder(x2)
-
-        B, L, C = z1.shape
-
-        z1 = z1.reshape((B * L, C))
-        z1m = z1m.reshape((B * L, C))
-        z2 = z2.reshape((B * L, C))
-        z2m = z2m.reshape((B * L, C))
-
-        # normalize
-        z1 = torch.nn.functional.normalize(z1)
-        z2 = torch.nn.functional.normalize(z2)
-        z1m = torch.nn.functional.normalize(z1m)
-        z2m = torch.nn.functional.normalize(z2m)
 
         return z1, z2, z1m, z2m
 

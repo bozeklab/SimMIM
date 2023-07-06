@@ -170,6 +170,20 @@ class Pretrainer:
 
             with torch.cuda.amp.autocast():
                 z1, z2, z1m, z2m = model(x1, x2, random_crop, m, mask)
+
+                B, L, C = z1.shape
+
+                z1 = z1.reshape((B * L, C))
+                z1m = z1m.reshape((B * L, C))
+                z2 = z2.reshape((B * L, C))
+                z2m = z2m.reshape((B * L, C))
+
+                # normalize
+                z1 = torch.nn.functional.normalize(z1)
+                z2 = torch.nn.functional.normalize(z2)
+                z1m = torch.nn.functional.normalize(z1m)
+                z2m = torch.nn.functional.normalize(z2m)
+
                 loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
 
             loss = loss / self.config.TRAIN.ACCUMULATION_STEPS
