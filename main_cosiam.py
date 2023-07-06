@@ -145,7 +145,7 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, loss_scaler, l
             lr_scheduler.step_update(epoch * num_steps + data_iter_step)
         torch.cuda.synchronize()
 
-        loss_meter.update(loss.item(), x1[0].shape)
+        loss_meter.update(loss.item())
         norm_meter.update(grad_norm)
         batch_time.update(time.time() - end)
         end = time.time()
