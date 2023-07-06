@@ -88,6 +88,8 @@ class VisionTransformerDecoder(VisionTransformer):
 
         self.pos_embed = PositionalEmbedding(grid_size, self.embed_dim)
 
+        self.patch_embed = None
+
         self.mask_token = nn.Parameter(torch.zeros(1, 1, self.embed_dim))
         self._trunc_normal_(self.mask_token, std=.02)
 
