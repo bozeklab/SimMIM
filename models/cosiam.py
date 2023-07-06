@@ -78,10 +78,11 @@ class VisionTransformerEncoder(VisionTransformer):
 
 
 class VisionTransformerDecoder(VisionTransformer):
-    def __init__(self, batch_size, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         assert self.num_classes == 0
+        self.pos_embed = None
 
         grid_size = kwargs['img_size'] // kwargs['patch_size']
 
@@ -188,9 +189,7 @@ class COSiam(nn.Module):
         z1m = torch.nn.functional.normalize(z1m)
         z2m = torch.nn.functional.normalize(z2m)
 
-        loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
-
-        return loss
+        return z1, z2, z1m, z2m
 
     @torch.jit.ignore
     def no_weight_decay(self):
@@ -247,9 +246,7 @@ def build_cosiam(config):
             use_abs_pos_emb=config.MODEL.DECODER.VIT.USE_APE,
             use_rel_pos_bias=config.MODEL.DECODER.VIT.USE_RPB,
             use_shared_rel_pos_bias=config.MODEL.DECODER.VIT.USE_SHARED_RPB,
-            use_mean_pooling=config.MODEL.DECODER.VIT.USE_MEAN_POOLING,
-            batch_size=config.DATA.BATCH_SIZE,
-            )
+            use_mean_pooling=config.MODEL.DECODER.VIT.USE_MEAN_POOLING)
     else:
         raise NotImplementedError(f"Unknown pre-train model: {model_type}")
 
