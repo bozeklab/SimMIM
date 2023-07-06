@@ -139,12 +139,11 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, loss_scaler, l
 
         loss = loss / config.TRAIN.ACCUMULATION_STEPS
         grad_norm = loss_scaler(loss, optimizer, parameters=model.parameters(),
-                                 update_grad=(data_iter_step + 1) % config.TRAIN.ACCUMULATION_STEPS == 0)
+                                update_grad=(data_iter_step + 1) % config.TRAIN.ACCUMULATION_STEPS == 0)
         if (data_iter_step + 1) % config.TRAIN.ACCUMULATION_STEPS == 0:
             optimizer.zero_grad()
         if (data_iter_step + 1) % config.TRAIN.ACCUMULATION_STEPS == 0:
             lr_scheduler.step_update(epoch * num_steps + data_iter_step)
-
         torch.cuda.synchronize()
 
         loss_meter.update(loss.item(), x1.size(0))
