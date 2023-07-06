@@ -119,13 +119,8 @@ class VisionTransformerDecoder(VisionTransformer):
 
 class COSiam(nn.Module):
     """Momentum encoder implementation stolen from MoCo v3"""
-    def __init__(self, encoder, decoder, rho, lambd):
+    def __init__(self, encoder, decoder):
         super().__init__()
-
-        self.F = None
-
-        self.rho = rho
-        self.lambd = lambd
 
         self.base_encoder = encoder
         self.momentum_encoder = copy.deepcopy(self.base_encoder)
