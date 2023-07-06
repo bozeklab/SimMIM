@@ -13,7 +13,7 @@ class TestPositionalEmbedding(unittest.TestCase):
                                     [0, 0, 2, 2, 1, 1, 1, 1]], dtype=torch.float32)
         grid = torch.tensor([[[[0., 1.], [0., 1.]]], [[[0.,  0.], [1., 1.]]]], dtype=torch.float32)
 
-        pos_enc = PositionalEmbedding(4)
+        pos_enc = PositionalEmbedding(grid_size=2, embed_dim=4, device='cpu')
         encoded_grid = pos_enc.encode_relative_position(grid, random_crop, grid_size)
         encoded_grid = torch.tensor(encoded_grid)
 
@@ -32,11 +32,14 @@ class TestPositionalEmbedding(unittest.TestCase):
 
     def test_calculate_grid(self):
         grid_size = 2
+        batch_size = 2
         random_crop = torch.tensor([[1, 1, 2, 2, 1, 1, 2, 2],
                                     [0, 0, 2, 2, 1, 1, 1, 1]], dtype=torch.float32)
 
-        pos_enc = PositionalEmbedding(4)
-        encoded_grid1, encoded_grid2 = pos_enc.calculate_grid(random_crop, grid_size)
+        pos_enc = PositionalEmbedding(grid_size=2, embed_dim=2, device='cpu')
+        grid1 = pos_enc.grid1
+        encoded_grid2 = PositionalEmbedding.encode_relative_position(grid1, random_crop, grid_size)
+        encoded_grid1 = grid1.unsqueeze(0).repeat(batch_size, 1, 1, 1)
 
         expected_encoded_grid1 = torch.tensor([[[[0.0, 1.0],
                                                 [0.0, 1.0]],
@@ -62,6 +65,7 @@ class TestPositionalEmbedding(unittest.TestCase):
                                                [[1.0, 1.0],
                                                 [1.5, 1.5]]]], dtype=torch.float32)
 
+
         self.assertTrue(torch.allclose(encoded_grid1, expected_encoded_grid1))
         self.assertTrue(torch.allclose(encoded_grid2, expected_encoded_grid2))
 
@@ -69,7 +73,7 @@ class TestPositionalEmbedding(unittest.TestCase):
         embed_dim = 128
         grid_size = 16
 
-        pos_enc = PositionalEmbedding(embed_dim=embed_dim)
+        pos_enc = PositionalEmbedding(grid_size=16, embed_dim=embed_dim, device='cpu')
         random_crop = torch.tensor([[0, 0, 16, 16, 5, 5, 11, 11],
                                     [0, 0, 2, 2, 1, 1, 1, 1]], dtype=torch.float32)
 
@@ -84,7 +88,7 @@ class TestPositionalEmbedding(unittest.TestCase):
 
         batch_size, _, h, w = grid.shape
 
-        pos_enc = PositionalEmbedding(embed_dim)
+        pos_enc = PositionalEmbedding(embed_dim=embed_dim, grid_size=8, device='cpu')
         pos_embed = pos_enc.get_2d_sincos_pos_embed_from_grid(embed_dim, grid)
 
         expected_shape = (batch_size, h * w, embed_dim)
@@ -94,7 +98,7 @@ class TestPositionalEmbedding(unittest.TestCase):
         embed_dim = 4
         random_crop = torch.tensor([1, 2, 3, 4])
 
-        pos_enc = PositionalEmbedding(embed_dim)
+        pos_enc = PositionalEmbedding(embed_dim=embed_dim, grid_size=4, device='cpu')
         pos_embed = pos_enc.get_1d_sincos_pos_embed_from_grid(embed_dim, random_crop)
 
         expected_shape = (4, embed_dim)
@@ -122,7 +126,7 @@ class TestPositionalEmbedding(unittest.TestCase):
         grid_size = 16
         embed_dim = 128
 
-        pos_enc = PositionalEmbedding(embed_dim)
+        pos_enc = PositionalEmbedding(embed_dim=embed_dim, grid_size=grid_size, device='cpu')
         p1, p2 = pos_enc(random_crop, grid_size)
 
         self.assertEqual(p1.shape, (3, grid_size ** 2, embed_dim))
@@ -135,7 +139,7 @@ class TestPositionalEmbedding(unittest.TestCase):
         grid_size = 16
         embed_dim = 128
 
-        pos_enc = PositionalEmbedding(embed_dim)
+        pos_enc = PositionalEmbedding(embed_dim=embed_dim, grid_size=grid_size, device='cpu')
         p1, p2 = pos_enc(random_crop, grid_size, cls_token=True)
 
         self.assertEqual(p1.shape, (3, grid_size ** 2 + 1, embed_dim))

@@ -12,20 +12,19 @@ from torch import Tensor
 
 
 class PositionalEmbedding(nn.Module):
-    def __init__(self, batch_size, grid_size, embed_dim):
+    def __init__(self, grid_size, embed_dim, device='cuda'):
         super().__init__()
 
         self.embed_dim = embed_dim
         self.dim_fix = nn.Linear(2 * embed_dim, embed_dim)
 
-        grid_h = torch.arange(grid_size).float().cuda()
-        grid_w = torch.arange(grid_size).float().cuda()
+        grid_h = torch.arange(grid_size).float().to(device)
+        grid_w = torch.arange(grid_size).float().to(device)
 
         grid = torch.meshgrid(grid_w, grid_h)  # here w goes first
         grid = torch.stack((grid[0].t(), grid[1].t()), dim=0)
 
         self.grid1 = grid.reshape([2, grid_size, grid_size])
-
 
     @staticmethod
     def encode_relative_position(grid, random_crop, grid_size):
@@ -102,23 +101,6 @@ class PositionalEmbedding(nn.Module):
 
         emb = torch.cat([emb_sin, emb_cos], dim=1)  # (M, D)
         return emb
-
-    def calculate_grid(self, random_crop, grid_size) -> Tuple[Tensor, Tensor]:
-        batch_size = random_crop.shape[0]
-
-        grid_h = torch.arange(grid_size).float()
-
-        grid_w = torch.arange(grid_size).float()
-        grid = torch.meshgrid(grid_w, grid_h)  # here w goes first
-        grid = torch.stack((grid[0].t(), grid[1].t()), dim=0)
-
-        grid1 = grid.reshape([2, grid_size, grid_size])
-        grid2 = grid1.clone()
-
-        grid1 = grid1.unsqueeze(0).repeat(batch_size, 1, 1, 1)
-        grid2 = PositionalEmbedding.encode_relative_position(grid2, random_crop, grid_size)
-
-        return grid1, grid2
 
     def forward(self, random_crop, grid_size, cls_token=False) -> Tuple[Tensor, Tensor]:
         #grid1, grid2 = self.calculate_grid(random_crop, grid_size)
