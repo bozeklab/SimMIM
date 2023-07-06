@@ -16,7 +16,7 @@ import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
-from timm.utils import AverageMeter, NativeScaler
+from timm.utils import AverageMeter
 
 from config import get_config
 from data.data_cosiam import build_loader_cosiam
@@ -136,12 +136,6 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, loss_scaler, l
 
         with torch.cuda.amp.autocast():
             loss = model(x1, x2, random_crop, m, mask)
-
-        loss_value = loss.item()
-
-        #if not math.isfinite(loss_value):
-        #    print("Loss is {}, stopping training".format(loss_value))
-        #    sys.exit(1)
 
         loss = loss / config.TRAIN.ACCUMULATION_STEPS
         grad_norm = loss_scaler(loss, optimizer, parameters=model.parameters(),
