@@ -184,7 +184,7 @@ class Pretrainer:
                 z1m = torch.nn.functional.normalize(z1m)
                 z2m = torch.nn.functional.normalize(z2m)
 
-                loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
+                loss, pos_sim = self.loss_unigrad(z1, z2, z1m, z2m)
 
             loss = loss / self.config.TRAIN.ACCUMULATION_STEPS
             grad_norm = loss_scaler(loss, optimizer, parameters=model.parameters(),
