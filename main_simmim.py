@@ -125,7 +125,8 @@ def train_one_epoch(config, model, data_loader, optimizer, epoch, loss_scaler, l
         img = img.cuda(non_blocking=True)
         mask = mask.cuda(non_blocking=True)
 
-        loss = model(img, mask)
+        with torch.cuda.amp.autocast():
+            loss = model(img, mask)
 
         loss = loss / config.TRAIN.ACCUMULATION_STEPS
         grad_norm = loss_scaler(loss, optimizer, parameters=model.parameters(),
