@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch
 from typing import Tuple
 
-from timm.models import trunc_normal_
+from timm.models.layers import trunc_normal_
 from torch import Tensor
 
 
