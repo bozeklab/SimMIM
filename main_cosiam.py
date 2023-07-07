@@ -196,7 +196,7 @@ class Pretrainer:
             torch.cuda.synchronize()
 
             loss_meter.update(loss.item())
-            if math.isnan(grad_norm):
+            if grad_norm is not None:
                 norm_meter.update(grad_norm)
             pos_sim_meter.update(pos_sim.item())
             batch_time.update(time.time() - end)
