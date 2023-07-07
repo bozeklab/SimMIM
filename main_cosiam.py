@@ -5,7 +5,7 @@
 # Written by Ze Liu
 # Modified by Zhenda Xie
 # --------------------------------------------------------
-
+import math
 import os
 import time
 import argparse
@@ -195,12 +195,12 @@ class Pretrainer:
                 lr_scheduler.step_update(epoch * num_steps + data_iter_step)
             torch.cuda.synchronize()
 
-            if (data_iter_step + 1) % self.config.TRAIN.ACCUMULATION_STEPS == 0:
-                loss_meter.update(loss.item())
+            loss_meter.update(loss.item())
+            if math.isnan(grad_norm):
                 norm_meter.update(grad_norm)
-                pos_sim_meter.update(pos_sim.item())
-                batch_time.update(time.time() - end)
-                end = time.time()
+            pos_sim_meter.update(pos_sim.item())
+            batch_time.update(time.time() - end)
+            end = time.time()
 
             if data_iter_step % self.config.PRINT_FREQ == 0:
                 lr = optimizer.param_groups[0]['lr']
