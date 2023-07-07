@@ -190,14 +190,14 @@ class Pretrainer:
             loss = loss / self.config.TRAIN.ACCUMULATION_STEPS
             grad_norm = loss_scaler(loss, optimizer, parameters=model.parameters(),
                                     update_grad=(data_iter_step + 1) % self.config.TRAIN.ACCUMULATION_STEPS == 0)
-            print('!!!')
-            print(grad_norm)
             if (data_iter_step + 1) % self.config.TRAIN.ACCUMULATION_STEPS == 0:
                 optimizer.zero_grad()
                 lr_scheduler.step_update(epoch * num_steps + data_iter_step)
             torch.cuda.synchronize()
 
             loss_meter.update(loss.item())
+            if grad_norm is not None:
+                grad_norm.update(grad_norm.item())
             pos_sim_meter.update(pos_sim.item())
             batch_time.update(time.time() - end)
             end = time.time()
