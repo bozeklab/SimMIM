@@ -13,6 +13,7 @@ import torchvision.transforms as T
 from torchvision.ops import masks_to_boxes
 
 from data.data_cosiam import COSiamMIMTransform, collate_fn
+from data.img_with_picke_dataset import ImgWithPickleDataset
 from data.mask_generator_mae import MaskGeneratorMAE
 from logger import create_logger
 
@@ -28,17 +29,19 @@ _C.DATA = CN()
 # Batch size for a single GPU, could be overwritten by command line argument
 _C.DATA.BATCH_SIZE = 2
 # Path to dataset, could be overwritten by command line argument
-_C.DATA.DATA_PATH = '/Users/piotrwojcik/sample_he/'
+_C.DATA.DATA_PATH = '/Users/piotrwojcik/images_he_seg1000/positive'
 # Dataset name
 _C.DATA.DATASET = 'imagenet'
 # Input image size
-_C.DATA.IMG_SIZE = 448
+_C.DATA.IMG_SIZE = 384
 # Interpolation to resize image (random, bilinear, bicubic)
 _C.DATA.INTERPOLATION = 'bicubic'
 # [SimMIM] Mask patch size for MaskGenerator
 _C.DATA.MASK_PATCH_SIZE = 32
 # [SimMIM] Mask ratio for MaskGenerator
 _C.DATA.MASK_RATIO = 0.6
+# Maximal number of boxes in an image
+_C.DATA.NUM_BOXES = 250
 # Fake log output
 _C.OUTPUT = '/Users/piotrwojcik/cosiam_log/'
 
@@ -198,7 +201,7 @@ if __name__ == '__main__':
     transform = COSiamMIMTransform(config)
     logger.info(f'Pre-train data transform:\n{transform}')
 
-    dataset = ImageFolder(config.DATA.DATA_PATH, transform)
+    dataset = ImgWithPickleDataset(config.DATA.DATA_PATH, transform)
     logger.info(f'Build dataset: train images = {len(dataset)}')
 
     sampler = RandomSampler(dataset)
