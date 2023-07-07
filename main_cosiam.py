@@ -190,6 +190,8 @@ class Pretrainer:
             loss = loss / self.config.TRAIN.ACCUMULATION_STEPS
             grad_norm = loss_scaler(loss, optimizer, parameters=model.parameters(),
                                     update_grad=(data_iter_step + 1) % self.config.TRAIN.ACCUMULATION_STEPS == 0)
+            print('!!!')
+            print(grad_norm)
             if (data_iter_step + 1) % self.config.TRAIN.ACCUMULATION_STEPS == 0:
                 optimizer.zero_grad()
                 lr_scheduler.step_update(epoch * num_steps + data_iter_step)
