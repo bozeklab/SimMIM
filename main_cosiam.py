@@ -195,11 +195,7 @@ class Pretrainer:
                 lr_scheduler.step_update(epoch * num_steps + data_iter_step)
             torch.cuda.synchronize()
 
-            loss_meter.update(loss.item())
-            if grad_norm is not None:
-                print('!!!')
-                print('dupa')
-                norm_meter.update(grad_norm)
+            loss_meter.update(loss.item(), x1.shape[0])
             pos_sim_meter.update(pos_sim.item())
             batch_time.update(time.time() - end)
             end = time.time()
