@@ -197,6 +197,8 @@ class Pretrainer:
 
             loss_meter.update(loss.item())
             if grad_norm is not None:
+                print('!!!')
+                print('dupa')
                 norm_meter.update(grad_norm)
             pos_sim_meter.update(pos_sim.item())
             batch_time.update(time.time() - end)
