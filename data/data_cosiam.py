@@ -28,7 +28,7 @@ class COSiamMIMTransform:
                 p=0.8
             ),
             T.ToTensor(),
-            RandomResizedCrop(config.DATA.IMG_SIZE, scale=(0.67, 1.), ratio=(3. / 4., 4. / 3.)),
+            RandomResizedCrop(config.DATA.IMG_SIZE, scale=(0.47, 1.), ratio=(3. / 4., 4. / 3.)),
             #T.Normalize(mean=torch.tensor(IMAGENET_DEFAULT_MEAN), std=torch.tensor(IMAGENET_DEFAULT_STD)),
         ])
 

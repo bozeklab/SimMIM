@@ -15,7 +15,7 @@ import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
-from utils import AverageMeterWithNaN as AverageMeter
+from timm.utils import AverageMeter
 
 from config import get_config
 from data.data_cosiam import build_loader_cosiam
@@ -192,15 +192,15 @@ class Pretrainer:
                                     update_grad=(data_iter_step + 1) % self.config.TRAIN.ACCUMULATION_STEPS == 0)
             if (data_iter_step + 1) % self.config.TRAIN.ACCUMULATION_STEPS == 0:
                 optimizer.zero_grad()
-            if (data_iter_step + 1) % self.config.TRAIN.ACCUMULATION_STEPS == 0:
                 lr_scheduler.step_update(epoch * num_steps + data_iter_step)
             torch.cuda.synchronize()
 
-            loss_meter.update(loss.item())
-            norm_meter.update(grad_norm)
-            pos_sim_meter.update(pos_sim.item())
-            batch_time.update(time.time() - end)
-            end = time.time()
+            if (data_iter_step + 1) % self.config.TRAIN.ACCUMULATION_STEPS == 0:
+                loss_meter.update(loss.item())
+                norm_meter.update(grad_norm)
+                pos_sim_meter.update(pos_sim.item())
+                batch_time.update(time.time() - end)
+                end = time.time()
 
             if data_iter_step % self.config.PRINT_FREQ == 0:
                 lr = optimizer.param_groups[0]['lr']
