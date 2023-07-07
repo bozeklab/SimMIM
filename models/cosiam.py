@@ -149,8 +149,7 @@ class COSiam(nn.Module):
             z1m = self.momentum_encoder(x1)
             z2m = self.momentum_encoder(x2)
 
-        return ya1, ya2, z1m, z2m
-        #return z1, z2, z1m, z2m
+        return z1, z2, z1m, z2m
 
     @torch.jit.ignore
     def no_weight_decay(self):

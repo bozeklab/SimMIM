@@ -15,7 +15,7 @@ import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
-from timm.utils import AverageMeter
+from utils import AverageMeterWithNaN as AverageMeter
 
 from config import get_config
 from data.data_cosiam import build_loader_cosiam
