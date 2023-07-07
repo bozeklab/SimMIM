@@ -137,8 +137,8 @@ class COSiam(nn.Module):
     def forward(self, x1, x2, random_crop, mm, mask):
         assert mask is not None
 
-        ya1 = self.base_encoder(x1)
-        ya2 = self.base_encoder(x2)
+        ya1 = self.base_encoder(x1, mask=mask)
+        ya2 = self.base_encoder(x2, mask=mask)
 
         z1 = self.decoder(ya1, random_crop, mask)
         random_crop = torch.concat([random_crop[:, 4:], random_crop[:, :4]], dim=1)
