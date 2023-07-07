@@ -202,12 +202,7 @@ class Pretrainer:
             batch_time.update(time.time() - end)
             end = time.time()
 
-            if data_iter_step % self.config.PRINT_FREQ == 0:
-                print('!!!')
-                print(data_iter_step)
-                print(self.config.PRINT_FREQ)
-                print(grad_norm)
-
+            if (data_iter_step + 1) % self.config.PRINT_FREQ == 0:
                 lr = optimizer.param_groups[0]['lr']
                 memory_used = torch.cuda.max_memory_allocated() / (1024.0 * 1024.0)
                 etas = batch_time.avg * (num_steps - data_iter_step)
