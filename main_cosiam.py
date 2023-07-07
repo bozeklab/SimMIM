@@ -195,7 +195,7 @@ class Pretrainer:
                 lr_scheduler.step_update(epoch * num_steps + data_iter_step)
             torch.cuda.synchronize()
 
-            loss_meter.update(loss.item(), x1.shape[0])
+            loss_meter.update(loss.item())
             pos_sim_meter.update(pos_sim.item())
             batch_time.update(time.time() - end)
             end = time.time()
