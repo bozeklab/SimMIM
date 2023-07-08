@@ -91,6 +91,9 @@ class COSiamMIMTransform:
 def collate_fn(batch):
     batch_num = len(batch)
 
+    print('!!!')
+    print(batch_num)
+
     keys = batch[0].keys()
     collated = {}
 

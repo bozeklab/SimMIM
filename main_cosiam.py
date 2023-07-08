@@ -103,9 +103,6 @@ def main(config):
     for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
         data_loader_train.sampler.set_epoch(epoch)
 
-        print('!!!!')
-        print(len(data_loader_train))
-
         pretrainer.train_one_epoch(model, data_loader_train, optimizer, epoch, loss_scaler,
                                    lr_scheduler, config.TRAIN.BASE_MOMENTUM)
         if dist.get_rank() == 0 and (epoch % config.SAVE_FREQ == 0 or epoch == (config.TRAIN.EPOCHS - 1)):
