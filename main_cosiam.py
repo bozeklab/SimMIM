@@ -174,6 +174,10 @@ class Pretrainer:
             with torch.cuda.amp.autocast():
                 z1, z2, z1m, z2m = model(x1, x2, random_crop, m, mask)
 
+                print(z1)
+                print('!!!!')
+                print(z2m)
+
                 B, L, C = z1.shape
 
                 z1 = z1.reshape((B * L, C))
@@ -188,8 +192,6 @@ class Pretrainer:
                 z2m = torch.nn.functional.normalize(z2m)
 
                 loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
-                print(z1)
-                print(z2m)
 
 
             loss_value = loss.item()
