@@ -85,11 +85,8 @@ class PositionalEmbedding(nn.Module):
         w = w.reshape(batch_size, 1, 1, 1)
 
         rp = torch.cat([h, w], dim=1)
-
-        print('!!!')
-        print(rp)
-
         rp = 10. * torch.log(rp)
+        print(rp)
         return rp
 
     @staticmethod
