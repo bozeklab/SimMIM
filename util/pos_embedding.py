@@ -89,13 +89,16 @@ class PositionalEmbedding(nn.Module):
         return rp
 
     @staticmethod
-    def get_2d_sincos_pos_embed_from_grid(embed_dim, grid):
+    def get_2d_sincos_pos_embed_from_grid(embed_dim, grid, debug=False):
         assert embed_dim % 2 == 0
         batch_size, _, h, w = grid.shape
 
         # use half of dimensions to encode grid_h
         emb_h = PositionalEmbedding.get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[:, 0])  # (N, H*W, D/2)
         emb_w = PositionalEmbedding.get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[:, 1])  # (N, H*W, D/2)
+
+        if debug:
+            print(emb_w)
 
         emb = torch.cat([emb_h, emb_w], dim=1)    # (N, H*W, D)
         emb = emb.reshape((batch_size, h*w, embed_dim))
