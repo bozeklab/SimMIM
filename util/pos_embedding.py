@@ -71,6 +71,9 @@ class PositionalEmbedding(nn.Module):
         rp_h = torch.multiply(grid[:, 0], h) + b_h
         rp_w = torch.multiply(grid[:, 1], w) + b_w
 
+        print('!!!')
+        print(rp_h)
+
         rp = torch.cat([rp_h, rp_w], dim=1)
         return rp
 
@@ -89,18 +92,13 @@ class PositionalEmbedding(nn.Module):
         return rp
 
     @staticmethod
-    def get_2d_sincos_pos_embed_from_grid(embed_dim, grid, debug=False):
+    def get_2d_sincos_pos_embed_from_grid(embed_dim, grid):
         assert embed_dim % 2 == 0
         batch_size, _, h, w = grid.shape
 
         # use half of dimensions to encode grid_h
         emb_h = PositionalEmbedding.get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[:, 0])  # (N, H*W, D/2)
         emb_w = PositionalEmbedding.get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[:, 1])  # (N, H*W, D/2)
-
-        if debug:
-            print(grid[:, 0].shape)
-            print(grid[:, 1].shape)
-            print()
 
         emb = torch.cat([emb_h, emb_w], dim=1)    # (N, H*W, D)
         emb = emb.reshape((batch_size, h*w, embed_dim))
@@ -133,10 +131,6 @@ class PositionalEmbedding(nn.Module):
         grid2 = self.grid1
         grid1 = self.grid1.unsqueeze(0).repeat(batch_size, 1, 1, 1)
         grid2 = PositionalEmbedding.encode_relative_position(grid2, random_crop, grid_size)
-
-        print(grid1)
-        print('!!!')
-        print(grid2)
 
         pos_embed1 = PositionalEmbedding.get_2d_sincos_pos_embed_from_grid(self.embed_dim, grid1)
         pos_embed2 = PositionalEmbedding.get_2d_sincos_pos_embed_from_grid(self.embed_dim, grid2)
