@@ -86,6 +86,9 @@ class VisionTransformerDecoder(VisionTransformer):
 
         grid_size = kwargs['img_size'] // kwargs['patch_size']
 
+        print('!!!')
+        print(grid_size)
+
         self.pos_embed = PositionalEmbedding(grid_size, self.embed_dim)
 
         self.patch_embed = None
@@ -104,8 +107,6 @@ class VisionTransformerDecoder(VisionTransformer):
         x = x * (1 - w) + mask_token * w
 
         p_a, p_b = self.pos_embed(random_crop, L ** 2)
-        print(p_b)
-
         wpos = mask.flatten(1).unsqueeze(-1).type_as(p_a)
         p = p_a * (1 - wpos) + p_b * wpos
         x = x + p
