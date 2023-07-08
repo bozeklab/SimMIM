@@ -86,9 +86,6 @@ class VisionTransformerDecoder(VisionTransformer):
 
         grid_size = kwargs['img_size'] // kwargs['patch_size']
 
-        print('!!!')
-        print(grid_size)
-
         self.pos_embed = PositionalEmbedding(grid_size, self.embed_dim)
 
         self.patch_embed = None
