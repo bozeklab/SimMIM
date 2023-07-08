@@ -101,12 +101,13 @@ class VisionTransformerDecoder(VisionTransformer):
 
         mask_token = self.mask_token.expand(B, L, -1)
         w = mask.flatten(1).unsqueeze(-1).type_as(mask_token)
+        print(w)
         x = x * (1 - w) + mask_token * w
 
-        #p_a, p_b = self.pos_embed(random_crop, L ** 2)
+        p_a, p_b = self.pos_embed(random_crop, L ** 2)
 
-        #p = p_a * (1 - w) + p_b * w
-        #x = x + p
+        p = p_a * (1 - w) + p_b * w
+        x = x + p
         x = self.pos_drop(x)
 
         rel_pos_bias = None
