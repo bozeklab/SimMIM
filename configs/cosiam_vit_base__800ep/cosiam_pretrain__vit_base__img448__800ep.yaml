@@ -35,6 +35,6 @@ TRAIN:
     NAME: 'multistep'
     GAMMA: 0.1
     MULTISTEPS: [700,]
-PRINT_FREQ: 8
+PRINT_FREQ: 32
 SAVE_FREQ: 200
 TAG: cosiam_pretrain__vit_base__img448__800ep
