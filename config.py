@@ -39,7 +39,7 @@ _C.DATA.MASK_PATCH_SIZE = 32
 # [SimMIM] Mask ratio for MaskGenerator
 _C.DATA.MASK_RATIO = 0.6
 # Maximal numer of bboxes in a image
-_C.DATA.NUM_BOXES: 250
+_C.DATA.NUM_BOXES = 250
 
 # -----------------------------------------------------------------------------
 # Model settings
