@@ -203,7 +203,7 @@ class Pretrainer:
                 optimizer.zero_grad()
                 lr_scheduler.step_update(epoch * num_steps + data_iter_step)
             torch.cuda.synchronize()
-            loss_meter.update(loss_value)
+            loss_meter.update(loss_value, x1.size(0))
             batch_time.update(time.time() - end)
             end = time.time()
 
