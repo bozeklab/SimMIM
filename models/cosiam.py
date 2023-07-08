@@ -105,7 +105,6 @@ class VisionTransformerDecoder(VisionTransformer):
 
         p_a, p_b = self.pos_embed(random_crop, L ** 2)
         print(p_a)
-        print(p_b)
 
         wpos = mask.flatten(1).unsqueeze(-1).type_as(p_a)
         p = p_a * (1 - wpos) + p_b * wpos
