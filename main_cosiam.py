@@ -192,6 +192,7 @@ class Pretrainer:
 
             loss = loss / self.config.TRAIN.ACCUMULATION_STEPS
             grad_norm = loss_scaler(loss, optimizer, parameters=model.parameters(),
+                                    clip_grad=config.TRAIN.CLIP_GRAD,
                                     update_grad=(data_iter_step + 1) % self.config.TRAIN.ACCUMULATION_STEPS == 0)
             if (data_iter_step + 1) % self.config.TRAIN.ACCUMULATION_STEPS == 0:
                 optimizer.zero_grad()
