@@ -188,6 +188,8 @@ class Pretrainer:
                 z2m = torch.nn.functional.normalize(z2m)
 
                 loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
+                print(loss)
+
 
             loss_value = loss.item()
 
