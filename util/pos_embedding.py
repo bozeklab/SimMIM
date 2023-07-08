@@ -86,7 +86,6 @@ class PositionalEmbedding(nn.Module):
 
         rp = torch.cat([h, w], dim=1)
         rp = 10. * torch.log(rp)
-        print(rp)
         return rp
 
     @staticmethod
@@ -143,6 +142,8 @@ class PositionalEmbedding(nn.Module):
         scale_variation = scale_variation.repeat(1, pos_embed2.shape[1], 1)
 
         pos_embed2 = self.dim_fix(torch.concat([pos_embed2, scale_variation], dim=-1))
+
+        print(pos_embed2)
 
         if cls_token:
             pos_embed1 = torch.concat([torch.zeros([pos_embed1.shape[0], 1, self.embed_dim]), pos_embed1], dim=1)
