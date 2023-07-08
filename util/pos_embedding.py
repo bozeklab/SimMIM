@@ -61,6 +61,10 @@ class PositionalEmbedding(nn.Module):
         h = h.reshape(batch_size, 1, 1, 1)
         w = w.reshape(batch_size, 1, 1, 1)
 
+        print('!!wssss!')
+        print(h)
+        print(w)
+
         # Nh * (i2 - i1) / h1
         b_h = grid_size * (random_crop[:, 4] - random_crop[:, 0]) / random_crop[:, 2]
         # Nw * (j2 - j1) / w1
@@ -70,9 +74,6 @@ class PositionalEmbedding(nn.Module):
 
         rp_h = torch.multiply(grid[:, 0], h) + b_h
         rp_w = torch.multiply(grid[:, 1], w) + b_w
-
-        print('!!!')
-        print(rp_h)
 
         rp = torch.cat([rp_h, rp_w], dim=1)
         return rp
