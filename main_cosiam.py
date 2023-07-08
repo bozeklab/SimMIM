@@ -68,6 +68,9 @@ def main(config):
     logger.info(str(model))
 
     optimizer = build_optimizer(config, model, logger, is_pretrain=True)
+    # Apply SyncBN
+    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[config.LOCAL_RANK],
                                                       find_unused_parameters=True,
                                                       broadcast_buffers=False)
