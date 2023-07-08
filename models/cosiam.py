@@ -101,12 +101,12 @@ class VisionTransformerDecoder(VisionTransformer):
 
         mask_token = self.mask_token.expand(B, L, -1)
         w = mask.flatten(1).unsqueeze(-1).type_as(mask_token)
-        print(w)
         x = x * (1 - w) + mask_token * w
 
         p_a, p_b = self.pos_embed(random_crop, L ** 2)
 
         p = p_a * (1 - w) + p_b * w
+        print(p)
         x = x + p
         x = self.pos_drop(x)
 
@@ -143,9 +143,6 @@ class COSiam(nn.Module):
         z1 = self.decoder(ya1, random_crop, mask)
         random_crop = torch.concat([random_crop[:, 4:], random_crop[:, :4]], dim=1)
         z2 = self.decoder(ya2, random_crop, mask)
-
-        print(z1)
-        print(z2)
 
         with torch.no_grad():  # no gradient
             self._update_momentum_encoder(mm)    # update the momentum encoder
