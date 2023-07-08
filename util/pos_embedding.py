@@ -67,8 +67,8 @@ class PositionalEmbedding(nn.Module):
         # Nw * (j2 - j1) / w1
         b_w = grid_size * (random_crop[:, 5] - random_crop[:, 1]) / random_crop[:, 3]
 
-        print(grid_size * (random_crop[:, 4] - random_crop[:, 0]))
-        print(grid_size * (random_crop[:, 5] - random_crop[:, 1]))
+        print((random_crop[:, 4] - random_crop[:, 0]))
+        print((random_crop[:, 5] - random_crop[:, 1]))
 
         b_h = b_h.reshape(batch_size, 1, 1, 1)
         b_w = b_w.reshape(batch_size, 1, 1, 1)
