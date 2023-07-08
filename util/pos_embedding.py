@@ -129,10 +129,10 @@ class PositionalEmbedding(nn.Module):
         grid1 = self.grid1.unsqueeze(0).repeat(batch_size, 1, 1, 1)
         grid2 = PositionalEmbedding.encode_relative_position(grid2, random_crop, grid_size)
 
-        print(grid2)
 
         pos_embed1 = PositionalEmbedding.get_2d_sincos_pos_embed_from_grid(self.embed_dim, grid1)
         pos_embed2 = PositionalEmbedding.get_2d_sincos_pos_embed_from_grid(self.embed_dim, grid2)
+        print(pos_embed2)
 
         pos_embed1 = pos_embed1.float()
         pos_embed2 = pos_embed2.float()
