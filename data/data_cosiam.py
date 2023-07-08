@@ -8,7 +8,6 @@ import torchvision.transforms as T
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from torch.utils.data import DataLoader, DistributedSampler
 from torch.utils.data import default_collate
-from torchvision.datasets import ImageFolder
 
 from data.img_with_picke_dataset import ImgWithPickleDataset
 from data.mask_generator import MaskGenerator
@@ -34,13 +33,6 @@ def _pad_boxes(boxes, num_boxes):
     idx = random.sample(range(boxes_available), num_boxes)
     return boxes[idx]
 
-class COSiamMIMBoxesTransform:
-    def __call__(self, boxes, old_size, new_size, crops):
-        mask = (boxes[:, :, -1] != -1).unsqueeze(-1).expand_as(boxes)
-        boxes = boxes.float()
-
-        # Multiply the elements by a certain number (e.g., 2) only where the mask is True
-        boxes[mask] *= 384 / 512
 
 class COSiamMIMTransform:
     def __init__(self, config):

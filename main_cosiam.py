@@ -159,6 +159,7 @@ class Pretrainer:
         start = time.time()
         end = time.time()
         for data_iter_step, sample in enumerate(data_loader):
+            print(data_iter_step)
             x1 = sample['x1']
             x2 = sample['x2']
             random_crop = sample['random_crop']

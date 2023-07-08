@@ -186,6 +186,24 @@ def draw_crop_boxes(images, crops):
     return annotated_images
 
 
+def draw_bboxes(images, boxes):
+    annotated_images = []
+
+    # Create a mask for elements where the last positions are not all -1
+    mask = (boxes[:, :, -1] != -1).unsqueeze(-1).expand_as(boxes)
+    boxes = boxes.float()
+
+    # Multiply the elements by a certain number (e.g., 2) only where the mask is True
+    boxes[mask] *= 384/512
+
+    for idx, image in enumerate(images):
+        annotated_image = draw_bounding_boxes(denormalize(image), boxes[idx], width=2, colors="red")
+        annotated_images.append(normalize(annotated_image))
+
+    annotated_images = [img for img in annotated_images]
+    return annotated_images
+
+
 def tensor_batch_to_list(tensor):
     tensor_list = [t for t in tensor]
     return tensor_list
@@ -218,6 +236,7 @@ if __name__ == '__main__':
         x2 = sample['x2']
         pos = sample['random_crop']
         mask = sample['mask']
+        boxes = sample['boxes']
 
         img0 = x0.permute(0, 2, 3, 1)
         img1 = x1.permute(0, 2, 3, 1)
@@ -237,6 +256,7 @@ if __name__ == '__main__':
         mask = tensor_batch_to_list(mask)
 
         img0 = draw_crop_boxes(img0, pos)
+        img0 = draw_bboxes(img0, boxes)
         img1 = [gray_out_mask(img, mask, config.MODEL.VIT.PATCH_SIZE, alpha=0.5) for img, mask in zip(img1, mask)]
         imgs = interleave_lists(img0, img1, img2)
         images.extend(imgs)
