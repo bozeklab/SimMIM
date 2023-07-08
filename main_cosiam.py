@@ -23,7 +23,7 @@ from models import build_model
 from lr_scheduler import build_scheduler
 from optimizer import build_optimizer
 from logger import create_logger
-from utils import load_checkpoint, save_checkpoint, auto_resume_helper
+from utils import load_checkpoint, save_checkpoint, auto_resume_helper, all_reduce_mean
 
 from utils import NativeScalerWithGradNormCount as NativeScaler
 
@@ -156,8 +156,6 @@ class Pretrainer:
         num_steps = len(data_loader)
         batch_time = AverageMeter()
         loss_meter = AverageMeter()
-        pos_sim_meter = AverageMeter()
-        norm_meter = AverageMeter()
 
         start = time.time()
         end = time.time()
@@ -188,21 +186,18 @@ class Pretrainer:
                 z1m = torch.nn.functional.normalize(z1m)
                 z2m = torch.nn.functional.normalize(z2m)
 
-                loss, pos_sim = self.loss_unigrad(z1, z2, z1m, z2m)
+                loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
 
+            loss_value = loss.item()
             loss = loss / self.config.TRAIN.ACCUMULATION_STEPS
-            grad_norm = loss_scaler(loss, optimizer, parameters=model.parameters(),
-                                    clip_grad=config.TRAIN.CLIP_GRAD,
-                                    update_grad=(data_iter_step + 1) % self.config.TRAIN.ACCUMULATION_STEPS == 0)
+            loss_scaler(loss, optimizer, parameters=model.parameters(),
+                        clip_grad=config.TRAIN.CLIP_GRAD,
+                        update_grad=(data_iter_step + 1) % self.config.TRAIN.ACCUMULATION_STEPS == 0)
             if (data_iter_step + 1) % self.config.TRAIN.ACCUMULATION_STEPS == 0:
                 optimizer.zero_grad()
                 lr_scheduler.step_update(epoch * num_steps + data_iter_step)
             torch.cuda.synchronize()
-
-            loss_meter.update(loss.item())
-            if grad_norm is not None:
-                norm_meter.update(grad_norm.item())
-            pos_sim_meter.update(pos_sim.item())
+            loss_meter.update(loss_value)
             batch_time.update(time.time() - end)
             end = time.time()
 
@@ -215,8 +210,6 @@ class Pretrainer:
                     f'eta {datetime.timedelta(seconds=int(etas))} lr {lr:.6f}\t'
                     f'time {batch_time.val:.4f} ({batch_time.avg:.4f})\t'
                     f'loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t'
-                    f'pos_sim {pos_sim_meter.val:.4f} ({pos_sim_meter.avg:.4f})\t'
-                    f'grad_norm {norm_meter.val:.4f} ({norm_meter.avg:.4f})\t'
                     f'mem {memory_used:.0f}MB')
         epoch_time = time.time() - start
         logger.info(f"EPOCH {epoch} training takes {datetime.timedelta(seconds=int(epoch_time))}")
