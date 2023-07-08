@@ -42,8 +42,8 @@ class COSiamMIMTransform:
         self.transform_img = T.Compose([
             T.Resize(size=config.DATA.IMG_SIZE, interpolation=PIL.Image.BILINEAR),
             T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
-            T.RandomGrayscale(p=0.2),
-            GaussianBlur(0.1),
+            T.RandomGrayscale(p=0.3),
+            GaussianBlur(0.3),
             Solarization(0.2),
             T.RandomApply(
                 [T.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1)],
