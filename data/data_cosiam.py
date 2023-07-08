@@ -15,7 +15,7 @@ from data.mask_generator import MaskGenerator
 from data.transforms import GaussianBlur, Solarization, RandomResizedCrop
 
 
-def pad_boxes(boxes, num_boxes):
+def _pad_boxes(boxes, num_boxes):
     fake_box = torch.tensor(4 * [-1])
     fake_class = torch.tensor([-1])
 
@@ -34,6 +34,13 @@ def pad_boxes(boxes, num_boxes):
     idx = random.sample(range(boxes_available), num_boxes)
     return boxes[idx]
 
+class COSiamMIMBoxesTransform:
+    def __call__(self, boxes, old_size, new_size, crops):
+        mask = (boxes[:, :, -1] != -1).unsqueeze(-1).expand_as(boxes)
+        boxes = boxes.float()
+
+        # Multiply the elements by a certain number (e.g., 2) only where the mask is True
+        boxes[mask] *= 384 / 512
 
 class COSiamMIMTransform:
     def __init__(self, config):
@@ -77,7 +84,7 @@ class COSiamMIMTransform:
         pos = pos1 + pos2
         mask = self.mask_generator()
 
-        boxes = pad_boxes(torch.tensor(boxes), self.num_boxes)
+        boxes = _pad_boxes(boxes, self.num_boxes)
 
         return {
             'x0': self.base_image(img),
