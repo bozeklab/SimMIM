@@ -69,13 +69,11 @@ class VisionTransformerEncoder(VisionTransformer):
         x = self.norm(x)
 
         B, L, C = x.shape
-        x = x.reshape(B * L, C)
 
         if self.projector:
             x = x.flatten(0, 1)
             x = self.projector(x)
             x = x.reshape(B, L + 1, -1)
-        x = x.reshape(B, L, C)
         x = x[:, 1:]
         return x
 
