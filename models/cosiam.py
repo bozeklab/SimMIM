@@ -68,8 +68,6 @@ class VisionTransformerEncoder(VisionTransformer):
             x = blk(x, rel_pos_bias=rel_pos_bias)
         x = self.norm(x)
 
-        B, L, C = x.shape
-
         if self.projector:
             x = x.flatten(0, 1)
             x = self.projector(x)
