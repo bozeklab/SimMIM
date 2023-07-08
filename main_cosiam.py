@@ -7,6 +7,7 @@
 # --------------------------------------------------------
 import math
 import os
+import sys
 import time
 import argparse
 import datetime
@@ -189,6 +190,11 @@ class Pretrainer:
                 loss, _ = self.loss_unigrad(z1, z2, z1m, z2m)
 
             loss_value = loss.item()
+
+            if not math.isfinite(loss_value):
+                print("Loss is {}, stopping training".format(loss_value))
+                sys.exit(1)
+
             loss = loss / self.config.TRAIN.ACCUMULATION_STEPS
             loss_scaler(loss, optimizer, parameters=model.parameters(),
                         clip_grad=config.TRAIN.CLIP_GRAD,
