@@ -98,7 +98,8 @@ class PositionalEmbedding(nn.Module):
         emb_w = PositionalEmbedding.get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[:, 1])  # (N, H*W, D/2)
 
         if debug:
-            print(emb_w)
+            print(grid[:, 0])
+            print()
 
         emb = torch.cat([emb_h, emb_w], dim=1)    # (N, H*W, D)
         emb = emb.reshape((batch_size, h*w, embed_dim))
