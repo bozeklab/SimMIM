@@ -10,10 +10,6 @@ MODEL:
     USE_RPB: False
     USE_SHARED_RPB: True
     USE_MEAN_POOLING: False
-  MASK_ENCODER:
-    MASK_FBASE: 32
-    N: 6
-    UNET_NORM: 'gn'
 DATA:
   IMG_SIZE: 224
   DATASET: imagenet100
