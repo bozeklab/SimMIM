@@ -14,7 +14,7 @@ import torch.distributed as dist
 import torchvision.transforms as T
 from torch.utils.data import DataLoader, DistributedSampler
 from torch.utils.data._utils.collate import default_collate
-from torchvision.datasets import ImageFolder, CIFAR100
+from torchvision.datasets import ImageFolder, CIFAR100, INaturalist
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 
 
@@ -97,6 +97,8 @@ def build_loader_simmim(config, logger):
 
     if config.DATA.DATASET == 'cifar100':
         dataset = CIFAR100(root=config.DATA.DATA_PATH, train=True, download=True, transform=transform)
+    elif config.DATA.DATASET == 'inaturalist':
+        dataset = INaturalist(root=config.DATA.DATA_PATH, split='train', download=True, transform=transform)
     else:
         dataset = ImageFolder(config.DATA.DATA_PATH, transform)
     logger.info(f'Build dataset: train images = {len(dataset)}')
