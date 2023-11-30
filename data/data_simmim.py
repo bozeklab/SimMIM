@@ -45,6 +45,15 @@ class MaskGenerator:
         return mask
 
 
+class ImageNet100(ImageFolder):
+    def __init__(self, root, transform=None, target_transform=None, loader=None):
+        super(ImageNet100, self).__init__(root, transform=transform, target_transform=target_transform, loader=loader)
+        self.classes = self.classes[:100]
+        self.class_to_idx = {cls: idx for idx, cls in enumerate(self.classes)}
+        self.samples = [(path, self.class_to_idx[cls]) for path, cls in self.samples if cls in self.classes]
+        self.targets = [target for _, target in self.samples]
+
+
 class SimMIMTransform:
     def __init__(self, config):
         self.transform_img = T.Compose([
@@ -99,6 +108,8 @@ def build_loader_simmim(config, logger):
         dataset = CIFAR100(root=config.DATA.DATA_PATH, train=True, download=True, transform=transform)
     elif config.DATA.DATASET == 'inaturalist':
         dataset = INaturalist(root=config.DATA.DATA_PATH, version='2018', download=True, transform=transform)
+    elif config.DATA.DATASET == 'imagenet100':
+        dataset = ImageNet100(config.DATA.DATA_PATH, transform)
     else:
         dataset = ImageFolder(config.DATA.DATA_PATH, transform)
     logger.info(f'Build dataset: train images = {len(dataset)}')
