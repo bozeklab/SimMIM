@@ -98,7 +98,7 @@ def build_loader_simmim(config, logger):
     if config.DATA.DATASET == 'cifar100':
         dataset = CIFAR100(root=config.DATA.DATA_PATH, train=True, download=True, transform=transform)
     elif config.DATA.DATASET == 'inaturalist':
-        dataset = INaturalist(root=config.DATA.DATA_PATH, split='train', download=True, transform=transform)
+        dataset = INaturalist(root=config.DATA.DATA_PATH, version='2018', download=True, transform=transform)
     else:
         dataset = ImageFolder(config.DATA.DATA_PATH, transform)
     logger.info(f'Build dataset: train images = {len(dataset)}')
