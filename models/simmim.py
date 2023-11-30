@@ -101,14 +101,6 @@ class SimMIM(nn.Module):
         self.encoder = encoder
         self.encoder_stride = encoder_stride
 
-        self.mask_encoder = UNet(
-            num_blocks=int(np.log2(self.img_size)-1),
-            img_size=self.img_size,
-            filter_start=mask_fbase,
-            in_chnls=3,
-            out_chnls=-1,
-            norm=unet_norm)
-
         self.decoder = nn.Sequential(
             nn.Conv2d(
                 in_channels=self.encoder.num_features,
